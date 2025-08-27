@@ -7,7 +7,7 @@ export const AppContext = createContext();
 
 export const AppContextProvider = ({children}) =>{
 
-    const currency = import.meta.VITE_CURRENCY;
+    const currency = import.meta.env.VITE_CURRENCY;
     const navigate = useNavigate()
     const [user,setuser] = useState(null);
     const [isSeller, setIsSeller] = useState(false)
@@ -49,6 +49,8 @@ export const AppContextProvider = ({children}) =>{
                delete cartData[itemId] 
             }
         }
+        setCartItems(cartData)
+    toast.success("Removed from Cart")
     }
 
 
@@ -74,8 +76,9 @@ export const AppContextProvider = ({children}) =>{
             if(cartItems[items] >0){
                 totalAmount+=itemInfo.offerPrice * cartItems[items]
             }
-            return Math.floor(totalAmount*100) /100;
         }
+            return Math.floor(totalAmount*100) /100;
+
     }
     
 
