@@ -3,16 +3,29 @@ import { NavLink } from 'react-router-dom'
 import {assets} from '../assets/assets'
 import logo from '../assets/logo.png'
 import { useAppContext } from '../context/AppContext'
-
+import toast from 'react-hot-toast'
 const Navbar = () => {
     const [open, setOpen] = React.useState(false)
     const { user, setuser, setShowUserLogin, navigate, searchQuery, setSearchQuery,
-        getCartCount
+        getCartCount, axios
      } = useAppContext()
 
     const logout = async ()=>{
-        setuser(null);
-        navigate('/')
+        try {
+            const {data} = await axios.get('/api/user/logout')
+            if(data.success){
+                toast.success(data.message); // ✅ show success notification
+                setuser(null);
+                navigate('/')
+            }
+            else{
+                toast.error(data.message)
+            }
+        } catch (error) {
+                toast.error(error.message)
+            
+        }
+        
     }
 
     useEffect(()=>{
@@ -23,10 +36,10 @@ const Navbar = () => {
 
 
   return (
-      <nav className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-300 bg-white relative transition-all">
+      <nav className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 border-b border-gray-300 bg-white relative transition-all">
 
             <NavLink to='/' onClick={()=> setOpen(false)}>
-                <img src={logo} alt="logo" className="w-32 md:w-40 lg:w-48 h-auto" />
+                <img src={logo} alt="logo" className="w-15 md:w-40 lg:w-48 h-auto"  />
             </NavLink>
 
             {/* Desktop Menu */}
