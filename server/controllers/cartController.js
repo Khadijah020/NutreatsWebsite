@@ -1,11 +1,16 @@
-import User from "../models/Product.js"
+import User from "../models/user.js"
 
 
 //Update user cart date: /api/cart/update
 
 export const updateCart = async (req, res)=>{
     try {
-        const {userId, cartItems} = req.body
+        const {cartItems} = req.body
+        const userId = req.userId; // ✅ get userId from auth middleware
+
+        if (!userId) {
+            return res.json({ success: false, message: "User not authorized" });
+        }
         await User.findByIdAndUpdate(userId, {cartItems})
         res.json({success: true, message: "Cart Updated"})
     } catch (error) {
