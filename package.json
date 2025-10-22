@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@tailwindcss/vite": "^4.1.12",
+    "lucide-react": "^0.544.0",
     "tailwindcss": "^4.1.12"
   }
 }

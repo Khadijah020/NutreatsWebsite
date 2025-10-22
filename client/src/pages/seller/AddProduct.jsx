@@ -1,5 +1,7 @@
 import React, { use, useState } from 'react'
 import { assets, categories } from '../../assets/assets'
+import { useAppContext } from '../../context/AppContext'
+import toast from "react-hot-toast";
 
 const AddProduct = () => {
     const [files, setFiles] = useState([])
@@ -8,9 +10,45 @@ const AddProduct = () => {
     const [category, setCategory] = useState('')
     const [price, setPrice] = useState('')
     const [offerPrice, setOfferPrice] = useState('')
+    const { axios } = useAppContext()
+    const [loading, setLoading] = useState(false);
 
     const onSubmitHandler = async(event)=>{
-        event.preventDefaut()
+        
+        try {
+            event.preventDefault()
+            setLoading(true);
+            const productData = {
+                name, description: description.split('\n'),
+                category, price, offerPrice
+            }
+            const formData = new FormData()
+            formData.append('productData', JSON.stringify(productData))
+            for(let i=0; i<files.length; i++){
+                formData.append('images', files[i])
+            }
+
+            const {data} = await axios.post('/api/product/add',formData)
+
+            if(data.success){
+                toast.success(data.message); // ✅ show success notification
+                setName('');
+                setDescription('');
+                setCategory('');
+                setPrice('');
+                setOfferPrice('');
+                setFiles('');
+
+            }
+            else{
+                toast.error(data.message)
+            }
+        } catch (error) {
+                toast.error(error.message)  
+        }
+        finally {
+    setLoading(false);
+  }
     }
 
   return (
@@ -58,7 +96,16 @@ const AddProduct = () => {
                         <input onChange={(e)=> setOfferPrice(e.target.value)} value={offerPrice} id="offer-price" type="number" placeholder="0" className="outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40" required />
                     </div>
                 </div>
-                <button className="px-8 py-2.5 bg-primary text-white font-medium rounded">ADD</button>
+<button 
+  type="submit" 
+  disabled={loading} 
+  className={`px-8 py-2.5 font-medium rounded flex items-center justify-center gap-2 text-white 
+              ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-primary"}`}
+>
+  {loading && <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>}
+  {loading ? "Adding..." : "ADD"}
+</button>
+
             </form>
         </div>
   )

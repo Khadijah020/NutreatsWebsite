@@ -1,14 +1,16 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
-    name: {type: String, required: true},
-    email: {type: String, required: true, unique: true},
-    password: {type: String, required: true},
-    cartItems: {type: Object, default: {}},
+const userSchema = new mongoose.Schema(
+  {
+    name: String,
+    email: { type: String, unique: false, sparse: true }, // guest users may share emails
+    password: String,
+    cartItems: { type: Object, default: {} },
+    isGuest: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
 
+const User = mongoose.models.user || mongoose.model("user", userSchema);
 
-}, {minimize: false} )
-
-const User = mongoose.models.user || mongoose.model('user', userSchema)
-
-export default User
+export default User;
