@@ -1,32 +1,88 @@
 import Order from "../models/Order.js"
 import Product from "../models/Product.js"
 
-//Place Order COD: /api/order/cod
-export const placeOrderCOD = async(req , res)=>{
-    try {
-        const { items, address } = req.body
-        const userId = req.userId // get from auth middleware
-        if(!address || items.length === 0){
-            return res.json ({success: true, message: "Invalid Data"})
-        }
-        //calculkate amount using items
-        let amount = await items.reduce(async(acc, item)=>{
-            const product = await Product.findById(item.product)
-            return (await acc) + product.offerPrice * item.quantity;
-        }, 0)
-        //Add tax chaarge (if in future)
+import User from "../models/user.js"; // ✅ ensure this is imported
 
-        await Order.create({
-            userId,
-            items, amount, address, paymentType: "COD"
-        })
-        return res.json({success: true, message: "Order Placed Successfully!"})
+import Address from "../models/Address.js";
 
- 
-    } catch (error) {
-        res.json({success: false, message: error.message})
+export const placeOrderCOD = async (req, res) => {
+      console.log('🧾 Incoming order data:', req.body);
+
+  try {
+    const { userId, items, address } = req.body;
+
+    if (!items || items.length === 0)
+      return res.json({ success: false, message: "Cart is empty" });
+
+    // Calculate total
+    let total = 0;
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      if (!product)
+        return res.json({ success: false, message: "Product not found" });
+      total += product.offerPrice * item.quantity;
     }
-}
+
+    let finalUserId = userId;
+    let addressId;
+
+    if (!userId) {
+      // 🧠 Guest user: check if email already exists
+      let existingUser = await User.findOne({ email: address.email });
+
+      if (!existingUser) {
+        // Create a new temporary guest user
+        existingUser = await User.create({
+          name: `${address.firstName} ${address.lastName}`,
+          email: address.email,
+          isGuest: true, // add this field to your User model
+        });
+      }
+
+      finalUserId = existingUser._id;
+
+      // Save guest's address as a proper Address document
+      const newAddress = await Address.create({
+        userId: finalUserId,
+        firstName: address.firstName,
+        lastName: address.lastName,
+        email: address.email,
+        street: address.street,
+        city: address.city,
+        state: address.state,
+        zipcode: address.zipcode,
+        country: address.country,
+        phone: address.phone,
+      });
+
+      addressId = newAddress._id;
+
+
+    } else {
+      addressId = address; // logged-in user (ObjectId)
+    }
+
+    // ✅ Create the order
+    const newOrder = await Order.create({
+      userId: finalUserId,
+      items,
+      amount: total,
+      address: addressId,
+      paymentType: "COD",
+      isPaid: false,
+      status: "Order Placed!",
+    });
+
+    return res.json({
+      success: true,
+      message: "Order placed successfully",
+      order: newOrder,
+    });
+  } catch (err) {
+    console.error("❌ Error placing order:", err);
+    res.json({ success: false, message: err.message });
+  }
+};
 
 //Get Orders by User ID: /api/order/user
 export const getUserOrders = async (req, res)=>{

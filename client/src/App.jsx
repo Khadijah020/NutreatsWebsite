@@ -1,5 +1,5 @@
 import React from 'react'
-import Navbar from './components/navbar.jsx'
+import Navbar from './components/Navbar.jsx'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import { Toaster } from 'react-hot-toast'
@@ -17,18 +17,21 @@ import SellerLayout from './pages/seller/SellerLayout.jsx'
 import AddProduct from './pages/seller/AddProduct.jsx'
 import Orders from './pages/seller/Orders.jsx'
 import ProductList from './pages/seller/ProductList.jsx'
+import ScrollToTop from './components/ScrollToTop.jsx'
+import AnnouncementBanner from './components/AnnouncementBanner.jsx'
 
 const App = () => {
 
   const isSellerPath = useLocation().pathname.includes("seller");
   const {showUserLogin, isSeller} = useAppContext()
   return (
-    <div className='text-default min-h-screen text-gray-700 bg-white'>
+    <div className='text-default min-h-screen text-gray-700 bg-[#e6dbcee0]'>
       {isSellerPath ? null : <Navbar/>}
+      {isSellerPath ? null : <AnnouncementBanner/>}
       {showUserLogin ? <Login/> : null}
       <Toaster />
-    <div className={isSellerPath ? "" : "px-6 md:px-16 lg:px-24 xl:px-32"}>
-
+    <div className={isSellerPath ? "" : "x-6 md:px-16 lg:px-24 xl:px-16"}>
+      <ScrollToTop />
     <Routes>
       <Route path='/' element={<Home/>}/>
       <Route path='/products' element={<AllProducts/>}/>

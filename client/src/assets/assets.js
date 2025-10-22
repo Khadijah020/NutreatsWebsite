@@ -69,6 +69,27 @@ import vanilla_muffins_image from "./vanilla_muffins_image.png";
 import quinoa_image from "./quinoa_image.png";
 import brown_rice_image from "./brown_rice_image.png";
 import barley_image from "./barley_image.png";
+import recipe_masalas_image from "./recipe_masalas_image.png";
+import chaat_image from "./chaat_image.png";
+import dry_fruits_image from "./seeds_image1.png";
+import everyday_masalas_image from "./everyday_masalas_image.png";
+import lentils_image from "./lentils_image.png";
+import natural_delights_image from "./natural_delights_image.png";
+import rice_flours_image from "./rice_flours_image.png";
+import seeds_image from "./seeds_image.png";
+import special_ingredients_image from "./special_ingredients_image.png";
+import spices_image from "./spices.png";
+import salts_image from "./salts_image.png";
+import oils_ghee_image from "./oils_ghee_image.png";
+import main_banner_image from "./hero-spices.jpg";
+
+
+
+
+
+
+
+
 
 export const assets = {
   logo,
@@ -98,52 +119,85 @@ export const assets = {
   bottom_banner_image_sm,
   add_address_iamge,
   box_icon,
+  main_banner_image,
+  
 };
 
 export const categories = [
   {
-    text: "Organic veggies",
-    path: "Vegetables",
-    image: organic_vegitable_image,
-    bgColor: "#FEF6DA",
+    text: "Spices",
+    path: "Spices",
+    image: spices_image,
+    bgColor: "#FFEFD6",
   },
   {
-    text: "Fresh Fruits",
-    path: "Fruits",
-    image: fresh_fruits_image,
+    text: "Chaat Essentials",
+    path: "chaat",
+    image: chaat_image,
+    bgColor: "#ecdad1ff",
+  },
+  {
+    text: "Dry Fruits & Nuts",
+    path: "DryFruits",
+    image: dry_fruits_image,
     bgColor: "#FEE0E0",
   },
   {
-    text: "Cold Drinks",
-    path: "Drinks",
-    image: bottles_image,
+    text: "Special Ingredients",
+    path: "Specials",
+    image: special_ingredients_image,
     bgColor: "#F0F5DE",
   },
   {
-    text: "Instant Food",
-    path: "Instant",
-    image: maggi_image,
+    text: "Lentils & Pulses",
+    path: "Lentils",
+    image: lentils_image,
     bgColor: "#E1F5EC",
   },
   {
-    text: "Dairy Products",
-    path: "Dairy",
-    image: dairy_product_image,
+    text: "Rice & Flours",
+    path: "Rice",
+    image: rice_flours_image,
     bgColor: "#FEE6CD",
   },
   {
-    text: "Bakery & Breads",
-    path: "Bakery",
-    image: bakery_image,
+    text: "Seeds",
+    path: "Seeds",
+    image: seeds_image,
     bgColor: "#E0F6FE",
   },
   {
-    text: "Grains & Cereals",
-    path: "Grains",
-    image: grain_image,
+    text: "Salts",
+    path: "Salts",
+    image: salts_image,
     bgColor: "#F1E3F9",
   },
+  {
+    text: "Oils & Ghee",
+    path: "Oils",
+    image: oils_ghee_image,
+    bgColor: "#E9F5E1",
+  },
+  {
+    text: "Recipe Masalas",
+    path: "RecipeMasalas",
+    image: recipe_masalas_image,
+    bgColor: "#F6E1F5",
+  },
+  {
+    text: "Everyday Masalas",
+    path: "EverydayMasalas",
+    image: everyday_masalas_image,
+    bgColor: "#DDF0FA",
+  },
+  {
+    text: "Natural Delights",
+    path: "NaturalDelights",
+    image: natural_delights_image,
+    bgColor: "#FFEFD6",
+  },
 ];
+
 
 export const footerLinks = [
   {
