@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { assets, categories } from "../../assets/assets";
+import React, { useState, useEffect } from "react";
+import { assets } from "../../assets/assets";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { PlusCircle, X, Upload } from "lucide-react";
@@ -13,6 +13,8 @@ const AddProduct = () => {
   const [offerPrice, setOfferPrice] = useState("");
   const { axios } = useAppContext();
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   const [weights, setWeights] = useState([]);
   const [currentWeight, setCurrentWeight] = useState({
@@ -20,6 +22,30 @@ const AddProduct = () => {
     price: "",
     offerPrice: "",
   });
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${backendUrl}api/category/list`);
+        const data = await response.json();
+        if (data.success) {
+          // Only show active categories
+          const activeCategories = data.categories.filter(cat => cat.isActive);
+          setCategories(activeCategories);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        toast.error('Failed to load categories');
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, [backendUrl]);
 
   const addWeightVariant = () => {
     if (!currentWeight.weight || !currentWeight.price || !currentWeight.offerPrice) {
@@ -40,6 +66,11 @@ const AddProduct = () => {
 
     if (!weights.length && (!price || !offerPrice)) {
       toast.error("Please add base price or at least one weight variant.");
+      return;
+    }
+
+    if (!category) {
+      toast.error("Please select a category");
       return;
     }
 
@@ -83,7 +114,7 @@ const AddProduct = () => {
         onSubmit={onSubmitHandler}
         className="w-full max-w-6xl mx-auto bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 md:p-12 space-y-6 border border-gray-200"
       >
-        <h2 className="text-3xl font-semibold text-center bg-gradient-to-r from-emerald-600 to-green-400 bg-clip-text text-transparent">
+        <h2 className="text-3xl font-semibold text-center bg-linear-to-r from-emerald-600 to-green-400 bg-clip-text text-transparent">
           Add New Product
         </h2>
 
@@ -171,18 +202,30 @@ const AddProduct = () => {
             <label className="font-medium block mb-1 text-gray-700">
               Category
             </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full border border-gray-300 shadow-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-emerald-400 outline-none bg-gray-50"
-            >
-              <option value="">Select Category</option>
-              {categories.map((item, index) => (
-                <option key={index} value={item.path}>
-                  {item.path}
-                </option>
-              ))}
-            </select>
+            {loadingCategories ? (
+              <div className="w-full border border-gray-300 shadow-sm rounded-lg px-3 py-2.5 bg-gray-50 text-gray-500">
+                Loading categories...
+              </div>
+            ) : (
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                required
+                className="w-full border border-gray-300 shadow-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-emerald-400 outline-none bg-gray-50"
+              >
+                <option value="">Select Category</option>
+                {categories.map((item) => (
+                  <option key={item._id} value={item.name}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            {!loadingCategories && categories.length === 0 && (
+              <p className="text-sm text-red-500 mt-1">
+                No categories available. Please add categories first.
+              </p>
+            )}
           </div>
         </div>
 
@@ -283,9 +326,9 @@ const AddProduct = () => {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || loadingCategories}
           className={`w-full py-3 mt-6 rounded-xl text-white font-medium flex items-center justify-center gap-2 transition-transform ${
-            loading
+            loading || loadingCategories
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-green-700 hover:bg-green-800 transition-transform hover:scale-[1.02]"
           }`}

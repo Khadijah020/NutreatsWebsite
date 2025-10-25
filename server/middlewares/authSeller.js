@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken'
 
 const authSeller = async (req, res, next)=>{
-    console.log("Cookies:", req.cookies);  // 👀 check cookies
 const {sellerToken} = req.cookies;
 
 if(!sellerToken){

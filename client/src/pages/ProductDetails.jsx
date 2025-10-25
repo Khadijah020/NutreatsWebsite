@@ -3,7 +3,6 @@ import { useAppContext } from "../context/AppContext";
 import { useParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import { ChevronRight, ShoppingCart, Truck, Shield, ZoomIn } from "lucide-react";
-import { categories } from "../assets/assets";
 
 const ProductDetails = () => {
   const {
@@ -22,6 +21,9 @@ const ProductDetails = () => {
   const [showZoom, setShowZoom] = useState(false);
   const [selectedWeight, setSelectedWeight] = useState(null);
   const [addedMessage, setAddedMessage] = useState(false);
+  const [categoryData, setCategoryData] = useState(null);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
   // ✅ Load product and related products
   useEffect(() => {
@@ -36,8 +38,27 @@ const ProductDetails = () => {
         )
         .slice(0, 4);
       setRelatedProducts(related);
+
+      // Fetch category data
+      fetchCategoryData(found.category);
     }
   }, [id, products]);
+
+  // Fetch category name from API
+  const fetchCategoryData = async (categoryName) => {
+    try {
+      const response = await fetch(`${backendUrl}api/category/list`);
+      const data = await response.json();
+      if (data.success) {
+        const foundCategory = data.categories.find(
+          (cat) => cat.name.toLowerCase() === categoryName.toLowerCase()
+        );
+        setCategoryData(foundCategory);
+      }
+    } catch (error) {
+      console.error('Error fetching category:', error);
+    }
+  };
 
   if (!product)
     return <p className="text-center py-10 text-gray-600">Loading...</p>;
@@ -56,34 +77,27 @@ const ProductDetails = () => {
   const cartKey = `${product._id}_${selectedWeight?.weight || "default"}`;
   const isInCart = cartItems && cartItems[cartKey] > 0;
 
-  // ✅ Add to cart handler with debugging + meta storage
-const handleAddToCart = async () => {
-  try {
-    //console.log("🛒 Adding to cart:", product.name, selectedWeight);
+  // ✅ Add to cart handler with meta storage
+  const handleAddToCart = async () => {
+    try {
+      const key = `${product._id}_${selectedWeight?.weight || "default"}`;
 
-    // Create unique key (product + weight)
-    const key = `${product._id}_${selectedWeight?.weight || "default"}`;
+      const cartMeta = JSON.parse(localStorage.getItem("cartMeta") || "{}");
+      cartMeta[key] = {
+        price: selectedWeight?.price || product.price,
+        offerPrice: selectedWeight?.offerPrice || product.offerPrice,
+      };
+      localStorage.setItem("cartMeta", JSON.stringify(cartMeta));
 
-    // Prepare meta info for cart (price, offer price, etc.)
-    const cartMeta = JSON.parse(localStorage.getItem("cartMeta") || "{}");
-    cartMeta[key] = {
-      price: selectedWeight?.price || product.price,
-      offerPrice: selectedWeight?.offerPrice || product.offerPrice,
-    };
-    localStorage.setItem("cartMeta", JSON.stringify(cartMeta));
+      addToCart(product._id, selectedWeight);
+      updateCartItem(key, (cartItems[key] || 0) + 1);
 
-    // Update context cart items
-    addToCart(product._id, selectedWeight);
-    updateCartItem(key, (cartItems[key] || 0) + 1);
-
-
-    setAddedMessage(true);
-    setTimeout(() => setAddedMessage(false), 2000);
-  } catch (err) {
-    console.error("❌ Add to cart failed:", err);
-  }
-};
-
+      setAddedMessage(true);
+      setTimeout(() => setAddedMessage(false), 2000);
+    } catch (err) {
+      console.error("❌ Add to cart failed:", err);
+    }
+  };
 
   const handleUpdateCart = (newQuantity) => {
     if (newQuantity <= 0) updateCartItem(cartKey, 0);
@@ -103,9 +117,9 @@ const handleAddToCart = async () => {
         <ChevronRight size={16} />
         <span
           className="cursor-pointer hover:text-green-700"
-          onClick={() => navigate(`/category/${product.category}`)}
+          onClick={() => navigate(`/products/${product.category.toLowerCase()}`)}
         >
-          {product.category}
+          {categoryData?.name || product.category}
         </span>
         <ChevronRight size={16} />
         <span className="text-green-700 font-semibold">{product.name}</span>
@@ -222,15 +236,14 @@ const handleAddToCart = async () => {
                     </button>
                   </div>
                   <button
-  onClick={() => {
-    handleAddToCart();
-    navigate("/cart");
-  }}
-  className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
->
-  Buy Now
-</button>
-
+                    onClick={() => {
+                      handleAddToCart();
+                      navigate("/cart");
+                    }}
+                    className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
+                  >
+                    Buy Now
+                  </button>
                 </>
               ) : (
                 <>
@@ -242,16 +255,14 @@ const handleAddToCart = async () => {
                     Add to Cart
                   </button>
                   <button
-  onClick={() => {
-    //console.log("⚡ Buy Now clicked:", product.name);
-    handleAddToCart();
-    navigate("/cart");
-  }}
-  className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
->
-  Buy Now
-</button>
-
+                    onClick={() => {
+                      handleAddToCart();
+                      navigate("/cart");
+                    }}
+                    className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
+                  >
+                    Buy Now
+                  </button>
                 </>
               )}
             </div>

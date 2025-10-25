@@ -1,13 +1,11 @@
 import Order from "../models/Order.js"
 import Product from "../models/Product.js"
-
-import User from "../models/user.js"; // ✅ ensure this is imported
-
+import User from "../models/user.js";
 import Address from "../models/Address.js";
 
 // Place Order COD: /api/order/cod
 export const placeOrderCOD = async (req, res) => {
-      console.log('🧾 Incoming order data:', req.body);
+  
 
   try {
     const { userId, items, address } = req.body;
@@ -15,14 +13,53 @@ export const placeOrderCOD = async (req, res) => {
     if (!items || items.length === 0)
       return res.json({ success: false, message: "Cart is empty" });
 
-    // Calculate total
+    // Calculate total and validate items
     let total = 0;
+    const validatedItems = [];
+
     for (const item of items) {
+      
       const product = await Product.findById(item.product);
       if (!product)
         return res.json({ success: false, message: "Product not found" });
-      total += product.offerPrice * item.quantity;
+
+      
+
+      // Determine the price and weight based on what was sent
+      let itemPrice;
+      let weightData = null;
+      
+      if (item.weight && product.weights && product.weights.length > 0) {
+        
+        // Find the weight in product's weights array
+        const weightOption = product.weights.find(w => {
+          return w.weight === item.weight;
+        });
+        
+        
+        if (weightOption) {
+          itemPrice = weightOption.offerPrice || weightOption.price;
+          weightData = weightOption.weight; // Store the weight label
+        } else {
+          itemPrice = product.offerPrice;
+        }
+      } else {
+        // No weight, use product's offer price
+        itemPrice = product.offerPrice;
+      }
+
+      total += itemPrice * item.quantity;
+
+      // Store the validated item with complete weight information
+      validatedItems.push({
+        product: item.product,
+        quantity: item.quantity,
+        weight: weightData // Store weight label or null
+      });
+
+      
     }
+
 
     let finalUserId = userId;
     let addressId;
@@ -36,7 +73,7 @@ export const placeOrderCOD = async (req, res) => {
         existingUser = await User.create({
           name: `${address.firstName} ${address.lastName}`,
           email: address.email,
-          isGuest: true, // add this field to your User model
+          isGuest: true,
         });
       }
 
@@ -57,22 +94,21 @@ export const placeOrderCOD = async (req, res) => {
       });
 
       addressId = newAddress._id;
-
-
     } else {
       addressId = address; // logged-in user (ObjectId)
     }
 
-    // ✅ Create the order
+    // ✅ Create the order with validated items
     const newOrder = await Order.create({
       userId: finalUserId,
-      items,
+      items: validatedItems, // Use validated items with weight data
       amount: total,
       address: addressId,
       paymentType: "COD",
       isPaid: false,
       status: "Order Placed!",
     });
+
 
     return res.json({
       success: true,
@@ -86,14 +122,12 @@ export const placeOrderCOD = async (req, res) => {
 };
 
 // Get Reports Data: /api/seller/reports
-// controllers/orderController.js
 export const getSellerReports = async (req, res) => {
-  const { type } = req.query; // weekly, monthly, yearly
+  const { type } = req.query;
 
   try {
     let reports = [];
 
-    // Example logic (replace with your DB aggregation)
     if (type === "weekly") {
       reports = [
         { period: "Week 1", orders: 12, products: 40 },
@@ -113,70 +147,73 @@ export const getSellerReports = async (req, res) => {
 
     return res.status(200).json({ success: true, reports });
   } catch (error) {
-    console.log("❌ Error fetching reports:", error.message);
+    console.log(" Error fetching reports:", error.message);
     res.status(500).json({ success: false, message: "Failed to fetch reports" });
   }
 };
 
-
-
 // Get Order by ID: /api/order/id
 export const getOrderById = async (req, res) => {
-    try {
-        const { id } = req.body;
+  try {
+    const { id } = req.body;
 
-        if (!id) {
-            return res.json({ success: false, message: "Order ID is required" });
-        }
-
-        const order = await Order.findById(id)
-            .populate({
-                path: "items.product",
-                model: "product"
-            })
-            .populate("address");
-
-        if (!order) {
-            return res.json({ success: false, message: "Order not found" });
-        }
-
-        res.json({ success: true, order });
-    } catch (error) {
-        console.log("❌ Error fetching order:", error.message);
-        res.json({ success: false, message: error.message });
+    if (!id) {
+      return res.json({ success: false, message: "Order ID is required" });
     }
+
+    const order = await Order.findById(id)
+      .populate({
+        path: "items.product",
+        model: "product"
+      })
+      .populate("address");
+
+    if (!order) {
+      return res.json({ success: false, message: "Order not found" });
+    }
+
+   
+    res.json({ success: true, order });
+  } catch (error) {
+    console.log("Error fetching order:", error.message);
+    res.json({ success: false, message: error.message });
+  }
 };
 
-//Get Orders by User ID: /api/order/user
-export const getUserOrders = async (req, res)=>{
-    try {
-        const userId = req.userId;
-        const orders = await Order.find({
-            userId,
-            $or: [{paymentType: "COD"}, {isPaid: true}]
-        }).populate({
-  path: "items.product", // nested populate for array
-  model: "product"
-})
-.populate("address")
-.sort({ createdAt: -1 });
-        res.json({success: true, orders})
-    } catch (error) {
-        console.log(error.message)
-        res.json({success: false, message: error.message})
-    }
-}
+// Get Orders by User ID: /api/order/user
+export const getUserOrders = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const orders = await Order.find({
+      userId,
+      $or: [{ paymentType: "COD" }, { isPaid: true }]
+    })
+      .populate({
+        path: "items.product",
+        model: "product"
+      })
+      .populate("address")
+      .sort({ createdAt: -1 });
 
-//Get All Orders (for seller/admin): /api/order/seller
+    res.json({ success: true, orders });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
+  }
+};
 
-export const getAllOrders = async (req, res)=>{
-    try {
-        
-        const orders = await Order.find({
-            $or: [{paymentType: "COD"}, {isPaid: true}]
-        }).populate("items.product address").sort({createdAt: -1})
-        res.json({success: true, orders})
-    } catch (error) {
-        console.log(error.message)
-        res.json({success: false, message: error.message})
-    }}
+// Get All Orders (for seller/admin): /api/order/seller
+export const getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      $or: [{ paymentType: "COD" }, { isPaid: true }]
+    })
+      .populate("items.product address")
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, orders });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
+  }
+};

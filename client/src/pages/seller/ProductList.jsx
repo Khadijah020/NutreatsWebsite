@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import toast from 'react-hot-toast';
@@ -10,6 +10,33 @@ const ProductList = () => {
   const [expandedProducts, setExpandedProducts] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+
+  // Fetch categories to display proper names
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${backendUrl}api/category/list`);
+        const data = await response.json();
+        if (data.success) {
+          setCategories(data.categories);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    fetchCategories();
+  }, [backendUrl]);
+
+  // Get category display name from database
+  const getCategoryName = (categoryName) => {
+    const category = categories.find(cat => 
+      cat.name.toLowerCase() === categoryName.toLowerCase()
+    );
+    return category ? category.name : categoryName;
+  };
 
   const toggleStock = async (id, inStock) => {
     try {
@@ -91,7 +118,7 @@ const ProductList = () => {
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="font-medium text-gray-900 truncate text-sm sm:text-base">{product.name}</span>
-                    <span className="text-xs text-gray-500 truncate">{product.category}</span>
+                    <span className="text-xs text-gray-500 truncate">{getCategoryName(product.category)}</span>
                   </div>
                 </div>
 

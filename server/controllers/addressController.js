@@ -3,8 +3,7 @@ import Address from "../models/Address.js"
 //Add Address: /api/address/add
 export const addAddress = async (req , res )=>{
     try {
-        console.log("REQ.BODY:", req.body); // check what you received
-        console.log("USER ID:", req.userId);
+        
         const address = req.body; // the frontend sends the address object
         const userId = req.userId; // from authUser middleware
         await Address.create({...address,userId})

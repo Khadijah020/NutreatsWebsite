@@ -17,6 +17,10 @@ const orderSchema = new mongoose.Schema({
             type: Number,
             required: true,
         },
+        weight: {
+            type: String,
+            required: false, // ✅ Added weight field - optional for products without variants
+        },
     }],
     amount: {
         type: Number,

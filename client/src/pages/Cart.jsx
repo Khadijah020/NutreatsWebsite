@@ -25,7 +25,6 @@ const Cart = () => {
   const [paymentOption, setPaymentOption] = useState("COD");
 
   const getCart = () => {
-    
     const tempArray = [];
     const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
     
@@ -83,9 +82,10 @@ const Cart = () => {
       const items = cartArray.map((item) => ({
         product: item._id,
         quantity: item.quantity,
-        weight: item.selectedWeight || null, // Include weight info
-        price: item.displayOfferPrice // Send actual price
+        weight: item.selectedWeight || null, // Send weight as string (e.g., "50g")
       }));
+
+      console.log('📦 Placing order with items:', items);
 
       if (!user) {
         const { data } = await axios.post("/api/order/cod", {
@@ -97,7 +97,7 @@ const Cart = () => {
           toast.success("Order placed successfully");
           setCartItems({});
           localStorage.removeItem("guestAddress");
-          localStorage.removeItem("cartMeta"); // Clear weight meta
+          localStorage.removeItem("cartMeta");
         } else {
           toast.error(data.message);
         }
@@ -113,7 +113,7 @@ const Cart = () => {
         if (data.success) {
           toast.success(data.message);
           setCartItems({});
-          localStorage.removeItem("cartMeta"); // Clear weight meta
+          localStorage.removeItem("cartMeta");
           navigate("/my-orders");
         } else toast.error(data.message);
       }
@@ -134,7 +134,6 @@ const Cart = () => {
   }, [user]);
 
   useEffect(() => {
-
     if (products.length > 0 && cartItems) getCart();
   }, [products, cartItems]);
 
@@ -182,12 +181,11 @@ const Cart = () => {
                     <p className="font-semibold text-gray-800 text-base sm:text-lg">
                       {product.name}
                     </p>
-                    <p className="text-gray-500 text-sm">
-                      Weight: {product.selectedWeight || "Standard"}
-                    </p>
-                    {/* <p className="text-green-600 text-sm font-medium">
-                      {currency}{product.displayOfferPrice} each
-                    </p> */}
+                    {product.selectedWeight && (
+                      <p className="text-gray-500 text-sm">
+                        Weight: {product.selectedWeight}
+                      </p>
+                    )}
 
                     {/* Quantity controls */}
                     <div className="flex items-center gap-3 text-sm text-gray-700 mt-2">
@@ -247,7 +245,7 @@ const Cart = () => {
               navigate("/products");
               scrollTo(0, 0);
             }}
-                        className="flex items-center gap-2 text-[#3b7d34] mt-6 font-medium hover:underline text-sm sm:text-base"
+            className="flex items-center gap-2 text-[#3b7d34] mt-6 font-medium hover:underline text-sm sm:text-base"
           >
             <img
               src={assets.arrow_right_icon_colored}
