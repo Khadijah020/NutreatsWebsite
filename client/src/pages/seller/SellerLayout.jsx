@@ -4,18 +4,19 @@ import logo from "../../assets/logo.png";
 import { Outlet, NavLink, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import { Menu, Users } from "lucide-react";
 
 const SellerLayout = () => {
   const { axios, navigate } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const sidebarLinks = [
-    { name: "Add Product", path: "/seller", icon: assets.add_icon },
+    { name: "Customers", path: "/seller", icon: "users", isLucide: true },
+    { name: "Add Product", path: "/seller/add-product", icon: assets.add_icon },
+    { name: "Manage Categories", path: "/seller/category", icon: assets.product_list_icon },
     { name: "Product List", path: "/seller/product-list", icon: assets.product_list_icon },
     { name: "Orders", path: "/seller/orders", icon: assets.order_icon },
     { name: "Create Bill", path: "/seller/create-bill", icon: assets.add_icon },
-    { name: "Manage Categories", path: "/seller/category", icon: assets.product_list_icon },
   ];
 
   const logout = async () => {
@@ -77,7 +78,11 @@ const SellerLayout = () => {
                 }`
               }
             >
-              <img src={item.icon} alt="" className="w-6 h-6 opacity-80" />
+              {item.isLucide ? (
+                <Users size={24} className="opacity-80" />
+              ) : (
+                <img src={item.icon} alt="" className="w-6 h-6 opacity-80" />
+              )}
               <p className="md:block hidden">{item.name}</p>
             </NavLink>
           ))}
@@ -106,7 +111,11 @@ const SellerLayout = () => {
               }
               onClick={() => setSidebarOpen(false)}
             >
-              <img src={item.icon} alt="" className="w-6 h-6 opacity-80" />
+              {item.isLucide ? (
+                <Users size={24} className="opacity-80" />
+              ) : (
+                <img src={item.icon} alt="" className="w-6 h-6 opacity-80" />
+              )}
               <p>{item.name}</p>
             </NavLink>
           ))}

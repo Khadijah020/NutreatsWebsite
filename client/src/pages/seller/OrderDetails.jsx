@@ -11,6 +11,8 @@ import {
   Clock,
   Mail,
   Phone,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 
 const OrderDetails = () => {
@@ -19,6 +21,7 @@ const OrderDetails = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [updatingPayment, setUpdatingPayment] = useState(false);
 
   const fetchOrderDetails = async () => {
     try {
@@ -35,12 +38,40 @@ const OrderDetails = () => {
     }
   };
 
+  // Toggle payment status
+  const togglePaymentStatus = async () => {
+    const newStatus = !order.isPaid;
+    const confirmMessage = newStatus 
+      ? 'Mark this order as paid?' 
+      : 'Mark this order as unpaid? This will revert the payment status.';
+    
+    if (!confirm(confirmMessage)) return;
+
+    setUpdatingPayment(true);
+    try {
+      const { data } = await axios.post("/api/order/toggle-payment", { 
+        orderId: id,
+        isPaid: newStatus 
+      });
+      if (data.success) {
+        toast.success(data.message);
+        setOrder({ ...order, isPaid: newStatus });
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setUpdatingPayment(false);
+    }
+  };
+
   // Helper function to get the correct address
   const getOrderAddress = (order) => {
     if (order.guestAddress) {
-      return order.guestAddress; // Manual order
+      return order.guestAddress;
     }
-    return order.address; // Regular order (populated reference)
+    return order.address;
   };
 
   useEffect(() => {
@@ -69,7 +100,6 @@ const OrderDetails = () => {
     );
   }
 
-  // Get the address to use throughout the component
   const address = getOrderAddress(order);
 
   return (
@@ -92,14 +122,43 @@ const OrderDetails = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <span
-            className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+          {/* Payment Toggle Button */}
+          <button
+            onClick={togglePaymentStatus}
+            disabled={updatingPayment}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
               order.isPaid
-                ? "bg-green-100 text-green-700 border-green-200"
-                : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                ? 'bg-red-50 text-red-700 border-2 border-red-200 hover:bg-red-100 hover:border-red-300'
+                : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 hover:shadow-md'
             }`}
           >
-            {order.isPaid ? "Paid" : "Payment Pending"}
+            {updatingPayment ? (
+              <>
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                <span>Updating...</span>
+              </>
+            ) : order.isPaid ? (
+              <>
+                <XCircle size={18} />
+                <span>Mark as Unpaid</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle size={18} />
+                <span>Mark as Paid</span>
+              </>
+            )}
+          </button>
+
+          {/* Status Badge */}
+          <span
+            className={`px-4 py-2 rounded-lg text-sm font-medium border-2 ${
+              order.isPaid
+                ? "bg-green-50 text-green-700 border-green-300"
+                : "bg-yellow-50 text-yellow-700 border-yellow-300"
+            }`}
+          >
+            {order.isPaid ? "✓ Paid" : "⏳ Pending"}
           </span>
         </div>
       </div>
@@ -122,13 +181,10 @@ const OrderDetails = () => {
 
             <div className="space-y-3">
               {order.items.map((item, index) => {
-                // Get the weight label
                 const weightLabel = item.weight;
                 
-                // Calculate price based on the selected weight
                 let basePrice = item.product?.offerPrice || item.product?.price || 0;
                 
-                // If item has a weight, find the matching weight in product's weights array
                 if (item.weight && item.product?.weights && item.product.weights.length > 0) {
                   const matchingWeight = item.product.weights.find(w => w.weight === item.weight);
                   if (matchingWeight) {
@@ -259,13 +315,13 @@ const OrderDetails = () => {
                 </p>
                 {address?.email && (
                   <div className="flex items-start gap-2 text-gray-600">
-                    <Mail size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Mail size={14} className="text-gray-400 mt-0.5 shrink-0" />
                     <span className="break-all">{address.email}</span>
                   </div>
                 )}
                 {address?.phone && (
                   <div className="flex items-center gap-2 text-gray-600">
-                    <Phone size={14} className="text-gray-400 flex-shrink-0" />
+                    <Phone size={14} className="text-gray-400 shrink-0" />
                     <span>{address.phone}</span>
                   </div>
                 )}

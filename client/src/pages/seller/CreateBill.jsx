@@ -391,7 +391,7 @@ export default function CreateBill() {
                       <img 
                         src={product.image[0]} 
                         alt={product.name} 
-                        className="w-16 h-16 object-cover rounded-lg flex-shrink-0" 
+                        className="w-16 h-16 object-cover rounded-lg shrink-0" 
                       />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-gray-900 mb-1">{product.name}</h3>
