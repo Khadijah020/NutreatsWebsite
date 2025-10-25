@@ -35,6 +35,14 @@ const OrderDetails = () => {
     }
   };
 
+  // Helper function to get the correct address
+  const getOrderAddress = (order) => {
+    if (order.guestAddress) {
+      return order.guestAddress; // Manual order
+    }
+    return order.address; // Regular order (populated reference)
+  };
+
   useEffect(() => {
     fetchOrderDetails();
   }, [id]);
@@ -60,6 +68,9 @@ const OrderDetails = () => {
       </div>
     );
   }
+
+  // Get the address to use throughout the component
+  const address = getOrderAddress(order);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-6">
@@ -126,8 +137,6 @@ const OrderDetails = () => {
                 }
                 
                 const itemTotal = basePrice * item.quantity;
-
-                
 
                 return (
                   <div
@@ -246,18 +255,18 @@ const OrderDetails = () => {
               </div>
               <div className="space-y-2 text-sm">
                 <p className="font-medium text-gray-900">
-                  {order.address?.firstName} {order.address?.lastName}
+                  {address?.firstName} {address?.lastName}
                 </p>
-                {order.address?.email && (
+                {address?.email && (
                   <div className="flex items-start gap-2 text-gray-600">
-                    <Mail size={14} className="text-gray-400 mt-0.5" />
-                    <span className="break-all">{order.address.email}</span>
+                    <Mail size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <span className="break-all">{address.email}</span>
                   </div>
                 )}
-                {order.address?.phone && (
+                {address?.phone && (
                   <div className="flex items-center gap-2 text-gray-600">
-                    <Phone size={14} className="text-gray-400" />
-                    <span>{order.address.phone}</span>
+                    <Phone size={14} className="text-gray-400 flex-shrink-0" />
+                    <span>{address.phone}</span>
                   </div>
                 )}
               </div>
@@ -272,13 +281,13 @@ const OrderDetails = () => {
                 </span>
               </div>
               <div className="text-sm text-gray-600 space-y-1">
-                <p>{order.address?.street}</p>
+                <p>{address?.street}</p>
                 <p>
-                  {order.address?.city}, {order.address?.state}
+                  {address?.city}, {address?.state}
                 </p>
-                <p>{order.address?.zipcode}</p>
+                <p>{address?.zipcode}</p>
                 <p className="font-medium text-gray-900">
-                  {order.address?.country}
+                  {address?.country}
                 </p>
               </div>
             </div>

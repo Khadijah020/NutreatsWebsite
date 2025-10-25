@@ -13,7 +13,7 @@ const Orders = () => {
 
     const fetchOrders = async () => {
         try {
-            const { data } = await axios.get('/api/order/seller')
+            const { data } = await axios.get('/api/order/sellerOrders')
             if (data.success) {
                 setOrders(data.orders)
             } else {
@@ -28,10 +28,20 @@ const Orders = () => {
         fetchOrders()
     }, [])
 
+    // Helper function to get address data (works for both regular and manual orders)
+    const getOrderAddress = (order) => {
+        if (order.guestAddress) {
+            return order.guestAddress // Manual order
+        }
+        return order.address // Regular order (populated reference)
+    }
+
     const filteredOrders = orders.filter(order => {
+        const address = getOrderAddress(order)
+        
         const matchesSearch = order.items.some(item =>
             item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-        ) || (order.address ? `${order.address.firstName} ${order.address.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) : false)
+        ) || (address ? `${address.firstName} ${address.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) : false)
 
         const matchesFilter = filterStatus === 'all' ||
             (filterStatus === 'paid' && order.isPaid) ||
@@ -88,90 +98,101 @@ const Orders = () => {
                         </p>
                     </div>
                 ) : (
-                    filteredOrders.map((order) => (
-                        <div
-                            key={order._id}
-                            onClick={() => navigate(`/seller/orders/${order._id}`)}
-                            className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 hover:shadow-md transition-all cursor-pointer group"
-                        >
-                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                {/* Order Items */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-start gap-3 mb-3">
-                                        <div className="p-2 bg-green-50 rounded-lg shrink-0">
-                                            <Package className="text-green-600" size={24} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs text-gray-500 mb-1">Order #{order._id.slice(-8)}</p>
-                                            <div className="space-y-1">
-                                                {order.items.map((item, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2 flex-wrap">
-                                                        <p className="font-medium text-gray-900 text-sm truncate">
-                                                            {item.product?.name || 'Unknown Product'}
-                                                        </p>
-                                                        {item.weight && (
-                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full shrink-0">
-                                                                {item.weight}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-sm text-green-600 font-medium shrink-0">
-                                                            x{item.quantity}
+                    filteredOrders.map((order) => {
+                        const address = getOrderAddress(order)
+                        
+                        return (
+                            <div
+                                key={order._id}
+                                onClick={() => navigate(`/seller/orders/${order._id}`)}
+                                className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 hover:shadow-md transition-all cursor-pointer group"
+                            >
+                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                    {/* Order Items */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start gap-3 mb-3">
+                                            <div className="p-2 bg-green-50 rounded-lg shrink-0">
+                                                <Package className="text-green-600" size={24} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="text-xs text-gray-500">Order #{order._id.slice(-8)}</p>
+                                                    {order.guestAddress && (
+                                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                                            Manual
                                                         </span>
-                                                    </div>
-                                                ))}
+                                                    )}
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {order.items.map((item, idx) => (
+                                                        <div key={idx} className="flex items-center gap-2 flex-wrap">
+                                                            <p className="font-medium text-gray-900 text-sm truncate">
+                                                                {item.product?.name || 'Unknown Product'}
+                                                            </p>
+                                                            {item.weight && (
+                                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full shrink-0">
+                                                                    {item.weight}
+                                                                </span>
+                                                            )}
+                                                            <span className="text-sm text-green-600 font-medium shrink-0">
+                                                                x{item.quantity}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Customer Info */}
-                                <div className="flex items-center gap-2 text-sm text-gray-600 lg:min-w-[200px]">
-                                    <User size={16} className="text-gray-400 shrink-0" />
-                                    <div className="truncate">
-                                        {order.address ? (
-                                            <>
-                                                <p className="font-medium text-gray-900">
-                                                    {order.address.firstName} {order.address.lastName}
-                                                </p>
-                                                <p className="text-xs text-gray-500 truncate">
-                                                    {order.address.city}, {order.address.state}
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <p className="text-xs text-gray-500">No address</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Amount */}
-                                <div className="flex items-center gap-2">
-                                    <div className="text-right">
-                                        <p className="text-lg font-semibold text-gray-900">
-                                            {currency}{order.amount}
-                                        </p>
-                                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                                            <CreditCard size={12} />
-                                            <span>{order.paymentType || 'N/A'}</span>
+                                    {/* Customer Info */}
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 lg:min-w-[200px]">
+                                        <User size={16} className="text-gray-400 shrink-0" />
+                                        <div className="truncate">
+                                            {address ? (
+                                                <>
+                                                    <p className="font-medium text-gray-900">
+                                                        {address.firstName} {address.lastName}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 truncate">
+                                                        {address.city}, {address.state}
+                                                    </p>
+                                                </>
+                                            ) : (
+                                                <p className="text-xs text-gray-500">No address</p>
+                                            )}
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Status & Date */}
-                                <div className="flex flex-col items-end gap-2 lg:min-w-[140px]">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(order.isPaid)}`}>
-                                        {order.isPaid ? 'Paid' : 'Pending'}
-                                    </span>
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                                        <Calendar size={12} />
-                                        <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                                    {/* Amount */}
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-right">
+                                            <p className="text-lg font-semibold text-gray-900">
+                                                {currency}{order.amount}
+                                            </p>
+                                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                <CreditCard size={12} />
+                                                <span>{order.paymentType || 'N/A'}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
 
-                                {/* Arrow */}
-                                <ChevronRight className="text-gray-400 group-hover:text-gray-600 transition-colors hidden lg:block" size={20} />
+                                    {/* Status & Date */}
+                                    <div className="flex flex-col items-end gap-2 lg:min-w-[140px]">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(order.isPaid)}`}>
+                                            {order.isPaid ? 'Paid' : 'Pending'}
+                                        </span>
+                                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                                            <Calendar size={12} />
+                                            <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Arrow */}
+                                    <ChevronRight className="text-gray-400 group-hover:text-gray-600 transition-colors hidden lg:block" size={20} />
+                                </div>
                             </div>
-                        </div>
-                    ))
+                        )
+                    })
                 )}
             </div>
 
