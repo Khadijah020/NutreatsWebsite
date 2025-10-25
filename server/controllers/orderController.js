@@ -5,6 +5,7 @@ import User from "../models/user.js"; // ✅ ensure this is imported
 
 import Address from "../models/Address.js";
 
+// Place Order COD: /api/order/cod
 export const placeOrderCOD = async (req, res) => {
       console.log('🧾 Incoming order data:', req.body);
 
@@ -82,6 +83,68 @@ export const placeOrderCOD = async (req, res) => {
     console.error("❌ Error placing order:", err);
     res.json({ success: false, message: err.message });
   }
+};
+
+// Get Reports Data: /api/seller/reports
+// controllers/orderController.js
+export const getSellerReports = async (req, res) => {
+  const { type } = req.query; // weekly, monthly, yearly
+
+  try {
+    let reports = [];
+
+    // Example logic (replace with your DB aggregation)
+    if (type === "weekly") {
+      reports = [
+        { period: "Week 1", orders: 12, products: 40 },
+        { period: "Week 2", orders: 20, products: 55 },
+      ];
+    } else if (type === "monthly") {
+      reports = [
+        { period: "Jan", orders: 50, products: 120 },
+        { period: "Feb", orders: 40, products: 100 },
+      ];
+    } else if (type === "yearly") {
+      reports = [
+        { period: "2023", orders: 600, products: 1500 },
+        { period: "2024", orders: 750, products: 1800 },
+      ];
+    }
+
+    return res.status(200).json({ success: true, reports });
+  } catch (error) {
+    console.log("❌ Error fetching reports:", error.message);
+    res.status(500).json({ success: false, message: "Failed to fetch reports" });
+  }
+};
+
+
+
+// Get Order by ID: /api/order/id
+export const getOrderById = async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        if (!id) {
+            return res.json({ success: false, message: "Order ID is required" });
+        }
+
+        const order = await Order.findById(id)
+            .populate({
+                path: "items.product",
+                model: "product"
+            })
+            .populate("address");
+
+        if (!order) {
+            return res.json({ success: false, message: "Order not found" });
+        }
+
+        res.json({ success: true, order });
+    } catch (error) {
+        console.log("❌ Error fetching order:", error.message);
+        res.json({ success: false, message: error.message });
+    }
 };
 
 //Get Orders by User ID: /api/order/user
