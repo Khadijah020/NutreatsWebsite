@@ -1,21 +1,33 @@
 import express from 'express';
 import authUser from '../middlewares/authUser.js';
-import { getAllOrders, getUserOrders, placeOrderCOD } from '../controllers/orderController.js';
-import authSeller from '../middlewares/authSeller.js'
-import { getOrderById } from '../controllers/orderController.js';
-import { getSellerReports } from '../controllers/orderController.js';
-import { createManualOrder,  getSellerOrders } from '../controllers/orderController.js'
+import authSeller from '../middlewares/authSeller.js';
+import { 
+  getAllOrders, 
+  getUserOrders, 
+  placeOrderCOD,
+  getOrderById,
+  getSellerReports,
+  createManualOrder,
+  getSellerOrders,
+  createBill,  // ✅ Make sure this is imported
+  togglePaymentStatus
+} from '../controllers/orderController.js';
 
+const orderRouter = express.Router();
 
-const orderRouter = express.Router()
+// Customer routes
+orderRouter.post('/cod', placeOrderCOD);
+orderRouter.get('/user', authUser, getUserOrders);
 
-orderRouter.post('/cod', placeOrderCOD)
-orderRouter.get('/user', authUser, getUserOrders)
-orderRouter.get('/seller', authSeller, getAllOrders)
-orderRouter.post('/id', authSeller, getOrderById)  // ✅ Add this line
-orderRouter.get('/reports', authSeller, getSellerReports)
-orderRouter.get('/sellerOrders', authSeller, getSellerOrders)  // ADD THIS
-orderRouter.post('/createBill', authSeller, createManualOrder)
+// Seller routes
+orderRouter.get('/seller', authSeller, getAllOrders);
+orderRouter.post('/id', authSeller, getOrderById);
+orderRouter.get('/reports', authSeller, getSellerReports);
+orderRouter.get('/sellerOrders', authSeller, getSellerOrders);
 
+// ✅ IMPORTANT: Use createBill (not createManualOrder) for the /createBill route
+orderRouter.post('/createBill', authSeller, createBill);
+orderRouter.post('/manual', authSeller, createManualOrder);
+orderRouter.post('/toggle-payment', authSeller, togglePaymentStatus)  // UPDATED ROUTE
 
-export default orderRouter
+export default orderRouter;

@@ -5,8 +5,6 @@ import Address from "../models/Address.js";
 
 // Place Order COD: /api/order/cod
 export const placeOrderCOD = async (req, res) => {
-  
-
   try {
     const { userId, items, address } = req.body;
 
@@ -18,24 +16,19 @@ export const placeOrderCOD = async (req, res) => {
     const validatedItems = [];
 
     for (const item of items) {
-      
       const product = await Product.findById(item.product);
       if (!product)
         return res.json({ success: false, message: "Product not found" });
-
-      
 
       // Determine the price and weight based on what was sent
       let itemPrice;
       let weightData = null;
       
       if (item.weight && product.weights && product.weights.length > 0) {
-        
         // Find the weight in product's weights array
         const weightOption = product.weights.find(w => {
           return w.weight === item.weight;
         });
-        
         
         if (weightOption) {
           itemPrice = weightOption.offerPrice || weightOption.price;
@@ -56,28 +49,36 @@ export const placeOrderCOD = async (req, res) => {
         quantity: item.quantity,
         weight: weightData // Store weight label or null
       });
-
-      
     }
-
 
     let finalUserId = userId;
     let addressId;
 
     if (!userId) {
-      // 🧠 Guest user: check if email already exists
-      let existingUser = await User.findOne({ email: address.email });
+  let existingUser = null;
 
-      if (!existingUser) {
-        // Create a new temporary guest user
-        existingUser = await User.create({
-          name: `${address.firstName} ${address.lastName}`,
-          email: address.email,
-          isGuest: true,
-        });
-      }
+  // Check by email first (if provided)
+  if (address.email) {
+    existingUser = await User.findOne({ email: address.email });
+  }
 
-      finalUserId = existingUser._id;
+  //  If not found, check by phone (if provided)
+  if (!existingUser && address.phone) {
+    existingUser = await User.findOne({ phone: address.phone });
+  }
+
+  // If still not found, create a new guest user
+  if (!existingUser) {
+    existingUser = await User.create({
+      name: `${address.firstName} ${address.lastName}`,
+      email: address.email || `${address.phone}@guest.local`, // fallback
+      phone: address.phone || null,
+      isGuest: true,
+    });
+  }
+
+  finalUserId = existingUser._id;
+
 
       // Save guest's address as a proper Address document
       const newAddress = await Address.create({
@@ -109,7 +110,6 @@ export const placeOrderCOD = async (req, res) => {
       status: "Order Placed!",
     });
 
-
     return res.json({
       success: true,
       message: "Order placed successfully",
@@ -120,6 +120,163 @@ export const placeOrderCOD = async (req, res) => {
     res.json({ success: false, message: err.message });
   }
 };
+
+// Create Bill (Manual Order with Customer Record): /api/order/createBill
+export const createBill = async (req, res) => {
+  try {
+    const { items, amount, address, paymentType, isPaid } = req.body;
+
+    // Validate required fields
+    if (!items || items.length === 0) {
+      return res.json({ success: false, message: 'No items provided' });
+    }
+
+    if (!address || !address.firstName || !address.phone) {
+      return res.json({ success: false, message: 'Customer name and phone are required' });
+    }
+
+    // Step 1: Check if customer already exists by phone number
+    let existingAddress = await Address.findOne({ phone: address.phone });
+    let customerAddressId = null;
+
+    if (existingAddress) {
+      // Update existing address with any new information
+      existingAddress.firstName = address.firstName || existingAddress.firstName;
+      existingAddress.lastName = address.lastName || existingAddress.lastName;
+      existingAddress.email = address.email || existingAddress.email;
+      existingAddress.street = address.street || existingAddress.street;
+      existingAddress.city = address.city || existingAddress.city;
+      existingAddress.state = address.state || existingAddress.state;
+      existingAddress.zipcode = address.zipcode || existingAddress.zipcode;
+      existingAddress.country = address.country || existingAddress.country;
+      
+      await existingAddress.save();
+      customerAddressId = existingAddress._id;
+    } else {
+      // Create new address record for this customer
+      const newAddress = await Address.create({
+        userId: null, // No user account for manual billing customers
+        firstName: address.firstName,
+        lastName: address.lastName || '',
+        email: address.email || '',
+        phone: address.phone,
+        street: address.street || '',
+        city: address.city || '',
+        state: address.state || '',
+        zipcode: Number(address.zipcode) || 0,
+        country: address.country || 'Pakistan'
+      });
+      customerAddressId = newAddress._id;
+    }
+
+    // Step 2: Validate products and calculate total
+    let calculatedAmount = 0;
+    const validatedItems = [];
+
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      
+      if (!product) {
+        return res.json({ 
+          success: false, 
+          message: `Product not found: ${item.product}` 
+        });
+      }
+
+      let itemPrice;
+      
+      // Check if it's a variant (has weight)
+      if (item.weight) {
+        const variant = product.weights?.find(w => w.weight === item.weight);
+        if (!variant) {
+          return res.json({ 
+            success: false, 
+            message: `Variant ${item.weight} not found for ${product.name}` 
+          });
+        }
+        itemPrice = variant.offerPrice || variant.price;
+      } else {
+        itemPrice = product.offerPrice || product.price;
+      }
+
+      calculatedAmount += itemPrice * item.quantity;
+      
+      validatedItems.push({
+        product: item.product,
+        quantity: item.quantity,
+        weight: item.weight || null
+      });
+    }
+
+    // Step 3: Create the order
+    const order = await Order.create({
+      userId: null, // Manual bills don't have userId
+      items: validatedItems,
+      amount: calculatedAmount,
+      address: customerAddressId, // Link to address
+      guestAddress: address, // Store guest address data
+      status: 'Order Placed',
+      paymentType: paymentType || 'Cash on Delivery',
+      isPaid: isPaid || false
+    });
+
+    // Populate the order with product details
+    const populatedOrder = await Order.findById(order._id)
+      .populate('items.product')
+      .populate('address');
+
+    res.json({
+      success: true,
+      message: 'Bill created successfully',
+      order: populatedOrder
+    });
+
+  } catch (error) {
+    console.log(error.message);
+    res.json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Add this function to your orderController.js (replaces the previous one)
+
+// Toggle Payment Status: /api/order/toggle-payment
+export const togglePaymentStatus = async (req, res) => {
+  try {
+    const { orderId, isPaid } = req.body;
+
+    if (!orderId) {
+      return res.json({ success: false, message: 'Order ID is required' });
+    }
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.json({ success: false, message: 'Order not found' });
+    }
+
+    order.isPaid = isPaid;
+    await order.save();
+
+    const message = isPaid 
+      ? 'Order marked as paid successfully' 
+      : 'Order marked as unpaid successfully';
+
+    return res.json({ 
+      success: true, 
+      message,
+      order 
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Don't forget to export it:
+// export { ..., togglePaymentStatus }
 
 // Get Reports Data: /api/seller/reports
 export const getSellerReports = async (req, res) => {
@@ -172,7 +329,6 @@ export const getOrderById = async (req, res) => {
       return res.json({ success: false, message: "Order not found" });
     }
 
-   
     res.json({ success: true, order });
   } catch (error) {
     console.log("Error fetching order:", error.message);
