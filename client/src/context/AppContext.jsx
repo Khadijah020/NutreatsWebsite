@@ -53,7 +53,16 @@ export const AppContextProvider = ({ children }) => {
         const mergedCart = { ...data.user.cartItems, ...guestCart };
         setCartItems(mergedCart);
         await axios.post('/api/cart/update', { cartItems: mergedCart });
+        const guestMeta = JSON.parse(localStorage.getItem("cartMeta") || "{}");
+if (Object.keys(guestMeta).length > 0) {
+  const serverMeta = JSON.parse(localStorage.getItem("serverCartMeta") || "{}");
+  const mergedMeta = { ...serverMeta, ...guestMeta };
+  localStorage.setItem("cartMeta", JSON.stringify(mergedMeta));
+  localStorage.removeItem("guestMeta");
+}
+
         localStorage.removeItem("guestCart");
+
     } else {
         setCartItems(data.user.cartItems);
     }
@@ -65,14 +74,35 @@ export const AppContextProvider = ({ children }) => {
     }
   };
 
-  //add item to cart
-  const addToCart = (itemId) => {
-  if (!itemId) return; // safety check
-  let cartData = { ...cartItems }; // shallow copy is enough
-  cartData[itemId] = (cartData[itemId] || 0) + 1;
-  setCartItems(cartData);
-  toast.success("Added to Cart");
-  if (!user) localStorage.setItem("guestCart", JSON.stringify(cartData));
+  //add to cart
+  const addToCart = (itemId, weightData = null) => {
+  // Create cart key that includes weight if it exists
+  const cartKey = weightData ? `${itemId}_${weightData.weight}` : itemId;
+  
+  setCartItems((prev) => {
+    const newCart = { ...prev };
+    if (newCart[cartKey]) {
+      newCart[cartKey] += 1;
+    } else {
+      newCart[cartKey] = 1;
+    }
+    
+    // Store weight info separately for cart display
+    if (weightData) {
+      const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
+      cartMeta[cartKey] = {
+        productId: itemId,
+        weight: weightData.weight,
+        price: weightData.price,
+        offerPrice: weightData.offerPrice
+      };
+      localStorage.setItem('cartMeta', JSON.stringify(cartMeta));
+    }
+    
+    return newCart;
+  });
+  
+  toast.success('Added to cart');
 };
 
 
@@ -86,15 +116,21 @@ export const AppContextProvider = ({ children }) => {
 };
 
 //remove item from cart
-const removeFromCart = (itemId) => {
-  if (!itemId) return;
-  let cartData = { ...cartItems };
-  if (cartData[itemId]) {
-    cartData[itemId] -= 1;
-    if (cartData[itemId] <= 0) delete cartData[itemId];
-  }
-  setCartItems(cartData);
-  if (!user) localStorage.setItem("guestCart", JSON.stringify(cartData));
+const removeFromCart = (cartKey) => {
+  setCartItems((prev) => {
+    const newCart = { ...prev };
+    if (newCart[cartKey] > 1) {
+      newCart[cartKey] -= 1;
+    } else {
+      delete newCart[cartKey];
+      
+      // Clean up meta data
+      const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
+      delete cartMeta[cartKey];
+      localStorage.setItem('cartMeta', JSON.stringify(cartMeta));
+    }
+    return newCart;
+  });
 };
 
 
@@ -124,15 +160,24 @@ const removeFromCart = (itemId) => {
   //get cart total amount
 const getCartAmount = () => {
   let totalAmount = 0;
-  for (const items in cartItems) {
-    let itemInfo = products.find((product) => product._id === items);
-    // Add safety check to ensure product exists
-    if (itemInfo && cartItems[items] > 0) {
-      totalAmount += itemInfo.offerPrice * cartItems[items];
+  const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
+
+  for (const cartKey in cartItems) {
+    const [productId] = cartKey.split('_');
+    const product = products.find((p) => p._id === productId);
+    const quantity = cartItems[cartKey];
+
+    if (product && quantity > 0) {
+      // If this item has variant meta info, use offerPrice from there
+      const meta = cartMeta[cartKey];
+      const offerPrice = meta?.offerPrice || product.offerPrice;
+      totalAmount += offerPrice * quantity;
     }
   }
+
   return Math.floor(totalAmount * 100) / 100;
 };
+
 
   useEffect(() => {
     fetchProducts();

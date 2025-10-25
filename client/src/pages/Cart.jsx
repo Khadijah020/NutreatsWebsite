@@ -25,17 +25,44 @@ const Cart = () => {
   const [paymentOption, setPaymentOption] = useState("COD");
 
   const getCart = () => {
-  const tempArray = [];
-  for (const key in cartItems) {
-    const product = products.find((item) => item._id === key);
-    // Only add if product exists
-    if (product) {
-      product.quantity = cartItems[key];
-      tempArray.push(product);
+    
+    const tempArray = [];
+    const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
+    
+    for (const key in cartItems) {
+      // Check if this is a weight variant (contains underscore)
+      if (key.includes('_')) {
+        const [productId, weight] = key.split('_');
+        const product = products.find((item) => item._id === productId);
+        
+        if (product && cartMeta[key]) {
+          const weightData = cartMeta[key];
+          tempArray.push({
+            ...product,
+            cartKey: key,
+            quantity: cartItems[key],
+            selectedWeight: weight,
+            displayPrice: weightData.price,
+            displayOfferPrice: weightData.offerPrice
+          });
+        }
+      } else {
+        // Regular product without weight variant
+        const product = products.find((item) => item._id === key);
+        if (product) {
+          tempArray.push({
+            ...product,
+            cartKey: key,
+            quantity: cartItems[key],
+            selectedWeight: null,
+            displayPrice: product.price,
+            displayOfferPrice: product.offerPrice
+          });
+        }
+      }
     }
-  }
-  setCartArray(tempArray);
-};
+    setCartArray(tempArray);
+  };
 
   const getUserAddress = async () => {
     try {
@@ -56,6 +83,8 @@ const Cart = () => {
       const items = cartArray.map((item) => ({
         product: item._id,
         quantity: item.quantity,
+        weight: item.selectedWeight || null, // Include weight info
+        price: item.displayOfferPrice // Send actual price
       }));
 
       if (!user) {
@@ -68,6 +97,7 @@ const Cart = () => {
           toast.success("Order placed successfully");
           setCartItems({});
           localStorage.removeItem("guestAddress");
+          localStorage.removeItem("cartMeta"); // Clear weight meta
         } else {
           toast.error(data.message);
         }
@@ -83,6 +113,7 @@ const Cart = () => {
         if (data.success) {
           toast.success(data.message);
           setCartItems({});
+          localStorage.removeItem("cartMeta"); // Clear weight meta
           navigate("/my-orders");
         } else toast.error(data.message);
       }
@@ -103,6 +134,7 @@ const Cart = () => {
   }, [user]);
 
   useEffect(() => {
+
     if (products.length > 0 && cartItems) getCart();
   }, [products, cartItems]);
 
@@ -151,8 +183,11 @@ const Cart = () => {
                       {product.name}
                     </p>
                     <p className="text-gray-500 text-sm">
-                      Weight: {product.weight || "N/A"}
+                      Weight: {product.selectedWeight || "Standard"}
                     </p>
+                    {/* <p className="text-green-600 text-sm font-medium">
+                      {currency}{product.displayOfferPrice} each
+                    </p> */}
 
                     {/* Quantity controls */}
                     <div className="flex items-center gap-3 text-sm text-gray-700 mt-2">
@@ -160,25 +195,25 @@ const Cart = () => {
                       <div className="flex items-center gap-2 bg-green-100 border border-green-300 rounded-md select-none">
                         <button
                           onClick={() =>
-                            cartItems[product._id] > 1
+                            cartItems[product.cartKey] > 1
                               ? updateCartItem(
-                                  product._id,
-                                  cartItems[product._id] - 1
+                                  product.cartKey,
+                                  cartItems[product.cartKey] - 1
                                 )
-                              : removeFromCart(product._id)
+                              : removeFromCart(product.cartKey)
                           }
                           className="cursor-pointer text-lg font-medium px-2 h-7 hover:bg-green-200 rounded-l transition"
                         >
                           -
                         </button>
                         <span className="w-6 text-center text-sm font-medium text-gray-800">
-                          {cartItems[product._id]}
+                          {cartItems[product.cartKey]}
                         </span>
                         <button
                           onClick={() =>
                             updateCartItem(
-                              product._id,
-                              cartItems[product._id] + 1
+                              product.cartKey,
+                              cartItems[product.cartKey] + 1
                             )
                           }
                           className="cursor-pointer text-lg font-medium px-2 h-7 hover:bg-green-200 rounded-r transition"
@@ -194,10 +229,10 @@ const Cart = () => {
                 <div className="flex sm:flex-col justify-between sm:justify-center items-center w-full sm:w-auto text-sm sm:text-base">
                   <p className="font-medium text-gray-800">
                     {currency}
-                    {product.offerPrice * product.quantity}
+                    {product.displayOfferPrice * product.quantity}
                   </p>
                   <button
-                    onClick={() => removeFromCart(product._id)}
+                    onClick={() => removeFromCart(product.cartKey)}
                     className="text-red-600 hover:text-red-700 mt-2 sm:mt-3"
                   >
                     Remove
@@ -212,7 +247,7 @@ const Cart = () => {
               navigate("/products");
               scrollTo(0, 0);
             }}
-            className="flex items-center gap-2 text-[#3b7d34] mt-6 font-medium hover:underline text-sm sm:text-base"
+                        className="flex items-center gap-2 text-[#3b7d34] mt-6 font-medium hover:underline text-sm sm:text-base"
           >
             <img
               src={assets.arrow_right_icon_colored}
@@ -293,7 +328,12 @@ const Cart = () => {
               <span>Price</span>
               <span>
                 {currency}
-                {getCartAmount()}
+                {cartArray
+                  .reduce(
+                    (sum, item) => sum + item.displayOfferPrice * item.quantity,
+                    0
+                  )
+                  .toFixed(2)}
               </span>
             </p>
             <p className="flex justify-between">
@@ -304,7 +344,12 @@ const Cart = () => {
               <span>Total</span>
               <span>
                 {currency}
-                {(getCartAmount() + getCartAmount() * 0.02).toFixed(2)}
+                {(
+                  cartArray.reduce(
+                    (sum, item) => sum + item.displayOfferPrice * item.quantity,
+                    0
+                  ) * 1.02
+                ).toFixed(2)}
               </span>
             </p>
           </div>

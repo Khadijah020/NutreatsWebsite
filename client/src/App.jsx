@@ -19,6 +19,9 @@ import Orders from './pages/seller/Orders.jsx'
 import ProductList from './pages/seller/ProductList.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import AnnouncementBanner from './components/AnnouncementBanner.jsx'
+import EditProductDetails from './pages/seller/EditProductDetails.jsx'
+import OrderDetails from './pages/seller/OrderDetails.jsx'
+//import Reports from './pages/seller/Reports.jsx'
 
 const App = () => {
 
@@ -37,6 +40,7 @@ const App = () => {
       <Route path='/products' element={<AllProducts/>}/>
       <Route path='/products/:category' element={<ProductCategory/>}/>
       <Route path='/products/:category/:id' element={<ProductDetails/>}/>
+      <Route path='/seller/edit-product/:id' element={<EditProductDetails/>}/>
       <Route path='/cart' element={<Cart/>}/>
       <Route path='/add-address' element={<AddAddress/>}/>
       <Route path='/my-orders' element={<MyOrders/>}/>
@@ -44,6 +48,8 @@ const App = () => {
       <Route index element={isSeller ? <AddProduct/> : null } />
       <Route path='product-list' element={<ProductList/>} />
       <Route path='orders' element={<Orders/>} />
+      <Route path="/seller/orders/:id" element={<OrderDetails />} />
+      {/* <Route path="/seller/reports" element={<Reports />} /> */}
       </Route>
 
     </Routes>
