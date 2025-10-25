@@ -79,7 +79,7 @@ const Categories = () => {
           ref={scrollRef}
           className="overflow-x-auto scrollbar-hide scroll-smooth"
         >
-          <div className="flex gap-3 sm:gap-6 md:gap-8 px-6 sm:px-12 py-3">
+          <div className="flex gap-4 sm:gap-6 md:gap-8 px-6 sm:px-12 py-3">
             {categories.map((category, index) => (
               <div
                 key={index}
@@ -87,14 +87,16 @@ const Categories = () => {
                   navigate(`/products/${category.path.toLowerCase()}`);
                   scrollTo(0, 0);
                 }}
-                className="cursor-pointer group flex flex-col items-center bg-white rounded-2xl shadow-sm hover:shadow-md hover:scale-[1.03] transition-all duration-300 min-w-[120px] sm:min-w-[150px] p-3"
+                className="cursor-pointer group flex flex-col items-center bg-white rounded-2xl shadow-sm hover:shadow-md 
+                           hover:scale-[1.05] transition-all duration-300 min-w-[140px] sm:min-w-[170px] md:min-w-[190px] 
+                           p-3 sm:p-4"
               >
                 <img
                   src={category.image}
                   alt={category.name}
-                  className="w-14 h-14 sm:w-20 sm:h-20 object-contain mb-2"
+                  className="w-16 h-16 sm:w-20 sm:h-20 md:w-22 md:h-22 object-contain mb-2"
                 />
-                <p className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-green-600 transition">
+                <p className="text-sm sm:text-base font-semibold text-gray-700 group-hover:text-green-600 transition">
                   {category.text}
                 </p>
               </div>
