@@ -23,6 +23,7 @@ import EditProductDetails from './pages/seller/EditProductDetails.jsx'
 import OrderDetails from './pages/seller/OrderDetails.jsx'
 //import Reports from './pages/seller/Reports.jsx'
 import CategoryManagement from './pages/seller/CategoryManagement'
+import CreateBill from './pages/seller/CreateBill'
 
 const App = () => {
 
@@ -51,6 +52,7 @@ const App = () => {
       <Route path='orders' element={<Orders/>} />
       <Route path="/seller/orders/:id" element={<OrderDetails />} />
       <Route path="/seller/category" element={<CategoryManagement />} />
+      <Route path="/seller/create-bill" element={<CreateBill />} />
       {/* <Route path="/seller/reports" element={<Reports />} /> */}
       </Route>
 

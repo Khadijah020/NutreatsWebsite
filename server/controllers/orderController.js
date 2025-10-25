@@ -180,6 +180,61 @@ export const getOrderById = async (req, res) => {
   }
 };
 
+// Get All Orders for Seller: /api/order/sellerOrders
+export const getSellerOrders = async (req, res) => {
+  try {
+    // Fetch ALL orders (including manual orders without userId)
+    const orders = await Order.find({})
+      .populate('items.product')
+      .populate('address') // Populate address reference if it exists
+      .sort({ createdAt: -1 })
+
+    return res.json({ success: true, orders })
+  } catch (error) {
+    console.log(error.message)
+    res.json({ success: false, message: error.message })
+  }
+}
+
+// Create Manual Order (Seller Dashboard): /api/order/manual
+export const createManualOrder = async (req, res) => {
+  try {
+    const { items, amount, address, paymentType, isPaid, status } = req.body;
+
+    if (!items || items.length === 0) {
+      return res.json({ success: false, message: 'No items provided' });
+    }
+
+    if (!address.firstName || !address.phone) {
+      return res.json({ success: false, message: 'Customer name and phone are required' });
+    }
+
+    // Create new order - use guestAddress for manual orders
+    const newOrder = new Order({
+      userId: null, // Manual orders don't have a user account
+      items,
+      amount,
+      address: null, // No address reference for manual orders
+      guestAddress: address, // Store address as embedded object
+      paymentType,
+      isPaid: isPaid || false,
+      status: status || 'Order Placed',
+      date: Date.now()
+    });
+
+    await newOrder.save();
+
+    return res.json({ 
+      success: true, 
+      message: 'Manual order created successfully',
+      order: newOrder 
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 // Get Orders by User ID: /api/order/user
 export const getUserOrders = async (req, res) => {
   try {
@@ -202,7 +257,7 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
-// Get All Orders (for seller/admin): /api/order/seller
+// Get All Orders (for seller/admin): /api/order/sellerOrders
 export const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find({
