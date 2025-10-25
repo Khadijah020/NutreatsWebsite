@@ -59,7 +59,7 @@ const ProductCard = ({ product }) => {
         <p className="text-gray-500 text-xs sm:text-sm">{product.category}</p>
 
         <p
-          className="text-gray-800 font-medium text-sm sm:text-base truncate w-full"
+          className="text-gray-800 font-bold text-sm sm:text-base truncate w-full"
           title={product.name}
         >
           {product.name}
@@ -95,7 +95,7 @@ const ProductCard = ({ product }) => {
                 const weight = product.weights.find(w => w.weight === e.target.value);
                 setSelectedWeight(weight);
               }}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-2 py-1.5 text-sm border border-green-600 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               {product.weights.map((w, index) => (
                 <option key={index} value={w.weight}>
@@ -111,7 +111,7 @@ const ProductCard = ({ product }) => {
           {/* Price */}
           <div className="flex flex-col gap-0.5">
             <div className="flex items-baseline gap-2">
-              <p className="text-base sm:text-lg md:text-xl font-semibold text-green-700">
+              <p className="text-base sm:text-lg md:text-xl font-bold text-green-700">
                 {currency}
                 {currentOfferPrice}
               </p>

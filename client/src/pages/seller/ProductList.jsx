@@ -86,7 +86,7 @@ const ProductList = () => {
               <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-gray-50 transition">
                 {/* Product Info */}
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 border border-gray-300 rounded overflow-hidden flex-shrink-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 border border-gray-300 rounded overflow-hidden shrink-0">
                     <img src={product.image[0]} alt={product.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex flex-col min-w-0">
