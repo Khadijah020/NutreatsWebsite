@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { categories } from '../assets/assets';
 import { useAppContext } from '../context/AppContext';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -8,6 +7,31 @@ const Categories = () => {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${backendUrl}api/category/list`);
+        const data = await response.json();
+        if (data.success) {
+          // Only show active categories
+          const activeCategories = data.categories.filter(cat => cat.isActive);
+          setCategories(activeCategories);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, [backendUrl]);
 
   const updateScrollButtons = () => {
     const container = scrollRef.current;
@@ -37,7 +61,19 @@ const Categories = () => {
       container.removeEventListener('scroll', updateScrollButtons);
       window.removeEventListener('resize', updateScrollButtons);
     };
-  }, []);
+  }, [categories]);
+
+  if (loading) {
+    return (
+      <div className="mt-16 text-center py-10">
+        <p className="text-gray-500">Loading categories...</p>
+      </div>
+    );
+  }
+
+  if (categories.length === 0) {
+    return null; // Don't show section if no categories
+  }
 
   return (
     <div className="mt-16 relative w-full">
@@ -80,24 +116,26 @@ const Categories = () => {
           className="overflow-x-auto scrollbar-hide scroll-smooth"
         >
           <div className="flex gap-4 sm:gap-6 md:gap-8 px-6 sm:px-12 py-3">
-            {categories.map((category, index) => (
+            {categories.map((category) => (
               <div
-                key={index}
+                key={category._id}
                 onClick={() => {
-                  navigate(`/products/${category.path.toLowerCase()}`);
+                  navigate(`/products/${category.name.toLowerCase()}`);
                   scrollTo(0, 0);
                 }}
                 className="cursor-pointer group flex flex-col items-center bg-white rounded-2xl shadow-sm hover:shadow-md 
                            hover:scale-[1.05] transition-all duration-300 min-w-[140px] sm:min-w-[170px] md:min-w-[190px] 
                            p-3 sm:p-4"
               >
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="w-16 h-16 sm:w-20 sm:h-20 md:w-22 md:h-22 object-contain mb-2"
-                />
-                <p className="text-sm sm:text-base font-semibold text-gray-700 group-hover:text-green-600 transition">
-                  {category.text}
+                {category.image && (
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-16 h-16 sm:w-20 sm:h-20 md:w-22 md:h-22 object-contain mb-2"
+                  />
+                )}
+                <p className="text-sm sm:text-base font-semibold text-gray-700 group-hover:text-green-600 transition text-center">
+                  {category.name}
                 </p>
               </div>
             ))}

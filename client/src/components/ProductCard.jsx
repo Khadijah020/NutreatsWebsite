@@ -1,18 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
 import { useAppContext } from "../context/AppContext";
 
 const ProductCard = ({ product }) => {
   const { currency, addToCart, removeFromCart, cartItems, navigate } = useAppContext();
+  const [categoryData, setCategoryData] = useState(null);
   
-  // NEW: Selected weight state
+  // Selected weight state
   const [selectedWeight, setSelectedWeight] = useState(
     product?.weights?.length > 0 ? product.weights[0] : null
   );
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+
+  // Fetch category data from API for display
+  useEffect(() => {
+    const fetchCategory = async () => {
+      if (!product?.category) return;
+      
+      try {
+        const response = await fetch(`${backendUrl}api/category/list`);
+        const data = await response.json();
+        if (data.success) {
+          const foundCategory = data.categories.find(
+            (cat) => cat.name.toLowerCase() === product.category.toLowerCase()
+          );
+          setCategoryData(foundCategory);
+        }
+      } catch (error) {
+        console.error('Error fetching category:', error);
+      }
+    };
+
+    fetchCategory();
+  }, [product?.category, backendUrl]);
+
   if (!product) return null;
 
-  // NEW: Use selected weight price or base price
+  // Use selected weight price or base price
   const currentPrice = selectedWeight ? selectedWeight.price : product.price;
   const currentOfferPrice = selectedWeight ? selectedWeight.offerPrice : product.offerPrice;
 
@@ -25,7 +50,7 @@ const ProductCard = ({ product }) => {
 
   const discount = calculateDiscount();
   
-  // NEW: Cart key includes weight if variants exist
+  // Cart key includes weight if variants exist
   const cartKey = selectedWeight 
     ? `${product._id}_${selectedWeight.weight}` 
     : product._id;
@@ -34,17 +59,16 @@ const ProductCard = ({ product }) => {
 
   return (
     <div
-  onClick={() => {
-    navigate(`/products/${product.category.toLowerCase()}/${product._id}`);
-    scrollTo(0, 0);
-  }}
-  className="group border border-gray-200 rounded-xl p-3 md:p-4 bg-white opacity-90
-        hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:border-green-300
-        transform hover:-translate-y-2 hover:scale-[1.03] transition-all duration-500
-        ease-in-out cursor-pointer w-full flex flex-col justify-between
-        h-full min-h-[300px] sm:min-h-[330px] max-h-[360px]"
->
-
+      onClick={() => {
+        navigate(`/products/${product.category.toLowerCase()}/${product._id}`);
+        scrollTo(0, 0);
+      }}
+      className="group border border-gray-200 rounded-xl p-3 md:p-4 bg-white opacity-90
+            hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:border-green-300
+            transform hover:-translate-y-2 hover:scale-[1.03] transition-all duration-500
+            ease-in-out cursor-pointer w-full flex flex-col justify-between
+            h-full min-h-[300px] sm:min-h-[330px] max-h-[360px]"
+    >
       {/* Image Container */}
       <div className="flex items-center justify-center h-40 sm:h-48 mb-3 overflow-hidden rounded-md">
         <img
@@ -56,7 +80,9 @@ const ProductCard = ({ product }) => {
 
       {/* Product Info */}
       <div className="space-y-2">
-        <p className="text-gray-500 text-xs sm:text-sm">{product.category}</p>
+        <p className="text-gray-500 text-xs sm:text-sm">
+          {categoryData?.name || product.category}
+        </p>
 
         <p
           className="text-gray-800 font-bold text-sm sm:text-base truncate w-full"
@@ -86,7 +112,7 @@ const ProductCard = ({ product }) => {
           </p>
         </div>
 
-        {/* NEW: Weight Selector */}
+        {/* Weight Selector */}
         {product.weights && product.weights.length > 0 && (
           <div onClick={(e) => e.stopPropagation()} className="pt-2">
             <select

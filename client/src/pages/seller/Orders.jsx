@@ -30,8 +30,8 @@ const Orders = () => {
 
     const filteredOrders = orders.filter(order => {
         const matchesSearch = order.items.some(item =>
-            item.product.name.toLowerCase().includes(searchTerm.toLowerCase())
-        ) || `${order.address.firstName} ${order.address.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+            item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        ) || (order.address ? `${order.address.firstName} ${order.address.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) : false)
 
         const matchesFilter = filterStatus === 'all' ||
             (filterStatus === 'paid' && order.isPaid) ||
@@ -98,23 +98,23 @@ const Orders = () => {
                                 {/* Order Items */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-start gap-3 mb-3">
-                                        <div className="p-2 bg-green-50 rounded-lg flex-shrink-0">
+                                        <div className="p-2 bg-green-50 rounded-lg shrink-0">
                                             <Package className="text-green-600" size={24} />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs text-gray-500 mb-1">Order #{order._id.slice(-8)}</p>
                                             <div className="space-y-1">
                                                 {order.items.map((item, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2">
+                                                    <div key={idx} className="flex items-center gap-2 flex-wrap">
                                                         <p className="font-medium text-gray-900 text-sm truncate">
-                                                            {item.product.name}
+                                                            {item.product?.name || 'Unknown Product'}
                                                         </p>
                                                         {item.weight && (
-                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full shrink-0">
                                                                 {item.weight}
                                                             </span>
                                                         )}
-                                                        <span className="text-sm text-green-600 font-medium">
+                                                        <span className="text-sm text-green-600 font-medium shrink-0">
                                                             x{item.quantity}
                                                         </span>
                                                     </div>
@@ -126,14 +126,20 @@ const Orders = () => {
 
                                 {/* Customer Info */}
                                 <div className="flex items-center gap-2 text-sm text-gray-600 lg:min-w-[200px]">
-                                    <User size={16} className="text-gray-400 flex-shrink-0" />
+                                    <User size={16} className="text-gray-400 shrink-0" />
                                     <div className="truncate">
-                                        <p className="font-medium text-gray-900">
-                                            {order.address.firstName} {order.address.lastName}
-                                        </p>
-                                        <p className="text-xs text-gray-500 truncate">
-                                            {order.address.city}, {order.address.state}
-                                        </p>
+                                        {order.address ? (
+                                            <>
+                                                <p className="font-medium text-gray-900">
+                                                    {order.address.firstName} {order.address.lastName}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    {order.address.city}, {order.address.state}
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <p className="text-xs text-gray-500">No address</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -145,7 +151,7 @@ const Orders = () => {
                                         </p>
                                         <div className="flex items-center gap-1 text-xs text-gray-500">
                                             <CreditCard size={12} />
-                                            <span>{order.paymentType}</span>
+                                            <span>{order.paymentType || 'N/A'}</span>
                                         </div>
                                     </div>
                                 </div>

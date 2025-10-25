@@ -5,6 +5,7 @@ import { Outlet, NavLink, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import { Menu } from "lucide-react";
+import CategoryManagement from "./CategoryManagement";
 
 const SellerLayout = () => {
   const { axios, navigate } = useAppContext();
@@ -14,7 +15,7 @@ const SellerLayout = () => {
     { name: "Add Product", path: "/seller", icon: assets.add_icon },
     { name: "Product List", path: "/seller/product-list", icon: assets.product_list_icon },
     { name: "Orders", path: "/seller/orders", icon: assets.order_icon },
-    // { name: "Reports", path: "/seller/reports", icon: assets.order_icon }, // Add this line - you can use a different icon if availabl
+    { name: "Manage Categories", path: "/seller/category", icon: assets.order_icon }, // Add this line - you can use a different icon if availabl
   ];
 
   const logout = async () => {
