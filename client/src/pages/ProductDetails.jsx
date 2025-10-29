@@ -3,6 +3,7 @@ import { useAppContext } from "../context/AppContext";
 import { useParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import { ChevronRight, ShoppingCart, Truck, Shield, ZoomIn } from "lucide-react";
+import SEO from "../components/SEO";
 
 const ProductDetails = () => {
   const {
@@ -13,7 +14,7 @@ const ProductDetails = () => {
     cartItems,
     updateCartItem,
   } = useAppContext();
-  const { id } = useParams();
+
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -22,27 +23,30 @@ const ProductDetails = () => {
   const [selectedWeight, setSelectedWeight] = useState(null);
   const [addedMessage, setAddedMessage] = useState(false);
   const [categoryData, setCategoryData] = useState(null);
-
+  const{slug} = useParams();
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
-  // ✅ Load product and related products
+  // ✅ Load product by slug
   useEffect(() => {
-    const found = products.find((item) => item._id === id);
-    if (found) {
-      setProduct(found);
-      if (found.weights?.length > 0) setSelectedWeight(found.weights[0]);
+
+  const found = products.find((item) => item.slug === slug);
+
+  
+  if (found) {
+    setProduct(found);
+    // ... rest of code
+    if (found.weights?.length > 0) setSelectedWeight(found.weights[0]);
 
       const related = products
         .filter(
-          (item) => item.category === found.category && item._id !== found._id
+          (item) => item.category === found.category && item.slug !== found.slug  // ← And this
         )
         .slice(0, 4);
       setRelatedProducts(related);
 
-      // Fetch category data
       fetchCategoryData(found.category);
-    }
-  }, [id, products]);
+  }
+}, [slug, products]);
 
   // Fetch category name from API
   const fetchCategoryData = async (categoryName) => {
@@ -104,233 +108,328 @@ const ProductDetails = () => {
     else updateCartItem(cartKey, newQuantity);
   };
 
+  // ===== SEO SCHEMAS =====
+  
+  // Product Schema
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.image,
+    "description": Array.isArray(product.description)
+      ? product.description.join(" ")
+      : product.description,
+    "sku": product._id,
+    "brand": {
+      "@type": "Brand",
+      "name": "NuTreats"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": `http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`,  // ← Change to slug
+      "priceCurrency": "PKR",
+      "price": currentOfferPrice,
+      "availability": product.inStock 
+        ? "https://schema.org/InStock" 
+        : "https://schema.org/OutOfStock",
+      "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      "seller": {
+        "@type": "Organization",
+        "name": "NuTreats"
+      }
+    },
+    "category": product.category
+  };
+
+  // Breadcrumb Schema
+  // ✅ Update Breadcrumb Schema
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "http://localhost:5173"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": categoryData?.name || product.category,
+        "item": `http://localhost:5173/${product.category.toLowerCase()}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": product.name,
+        "item": `http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`  // ← Change to slug
+      }
+    ]
+  };
+
+
+  const combinedSchema = {
+    "@context": "https://schema.org",
+    "@graph": [productSchema, breadcrumbSchema]
+  };
+
+  // Generate meta description
+  const metaDescription = Array.isArray(product.description)
+    ? product.description.join(" ").substring(0, 155)
+    : product.description.substring(0, 155);
+
   return (
-    <div className="bg-[#e6dbcee0] min-h-screen px-4 sm:px-6 py-10">
-      {/* Breadcrumb */}
-      <div className="flex items-center text-gray-600 text-sm mb-6 max-w-6xl mx-auto flex-wrap gap-1">
-        <span
-          className="cursor-pointer hover:text-green-700"
-          onClick={() => navigate("/")}
-        >
-          Home
-        </span>
-        <ChevronRight size={16} />
-        <span
-          className="cursor-pointer hover:text-green-700"
-          onClick={() => navigate(`/products/${product.category.toLowerCase()}`)}
-        >
-          {categoryData?.name || product.category}
-        </span>
-        <ChevronRight size={16} />
-        <span className="text-green-700 font-semibold">{product.name}</span>
-      </div>
+    <>
+      <SEO
+        title={`${product.name} - Buy Online | NuTreats Pakistan`}
+        description={`${metaDescription}... Shop now with free delivery in Lahore. ${discount > 0 ? `Save ${discount}%` : 'Best price guaranteed'}.`}
+        keywords={`${product.name}, ${product.category}, buy ${product.name} online, healthy snacks pakistan, ${categoryData?.name || product.category} online`}
+        url={`http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`}  // ← Change to slug
+        canonicalUrl={`http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`}  // ← Change to slug
+        image={product.image[0]}
+        type="product"
+        schema={combinedSchema}
+      />
 
-      {/* Product Card */}
-      <div className="bg-white shadow-lg rounded-2xl max-w-6xl mx-auto p-6 md:p-10 flex flex-col md:flex-row gap-10">
-        {/* Left: Image Gallery */}
-        <div className="flex-1 flex flex-col items-center">
-          <div className="relative w-full max-w-sm h-80 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-            <img
-              src={product.image?.[thumbnail] ?? product.image?.[0]}
-              alt={product.name}
-              className="object-contain h-full w-full cursor-zoom-in transition-transform duration-500 hover:scale-105"
-              onClick={() => setShowZoom(true)}
-            />
-            <button
-              onClick={() => setShowZoom(true)}
-              className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow hover:scale-105 transition"
-            >
-              <ZoomIn className="text-gray-600 w-5 h-5" />
-            </button>
-          </div>
+      <div className="bg-[#e6dbcee0] min-h-screen px-4 sm:px-6 py-10">
+        {/* Breadcrumb */}
+        <nav 
+          className="flex items-center text-gray-600 text-sm mb-6 max-w-6xl mx-auto flex-wrap gap-1"
+          aria-label="Breadcrumb"
+        >
+          <span
+            className="cursor-pointer hover:text-green-700"
+            onClick={() => navigate("/")}
+          >
+            Home
+          </span>
+          <ChevronRight size={16} />
+          <span
+            className="cursor-pointer hover:text-green-700"
+            onClick={() => navigate(`/${product.category.toLowerCase()}`)}
+          >
+            {categoryData?.name || product.category}
+          </span>
+          <ChevronRight size={16} />
+          <span className="text-green-700 font-semibold">{product.name}</span>
+        </nav>
 
-          {product.image?.length > 1 && (
-            <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
-              {product.image.map((img, index) => (
-                <img
-                  key={index}
-                  src={img}
-                  alt={`${product.name}-${index}`}
-                  onClick={() => setThumbnail(index)}
-                  className={`w-20 h-20 rounded-xl border-2 object-cover cursor-pointer transition-all ${
-                    thumbnail === index
-                      ? "border-green-600 shadow-md"
-                      : "border-gray-200 hover:border-green-400"
-                  }`}
-                />
-              ))}
+        {/* Product Card */}
+        <article className="bg-white shadow-lg rounded-2xl max-w-6xl mx-auto p-6 md:p-10 flex flex-col md:flex-row gap-10">
+          {/* Left: Image Gallery */}
+          <div className="flex-1 flex flex-col items-center">
+            <div className="relative w-full max-w-sm h-80 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
+              <img
+                src={product.image?.[thumbnail] ?? product.image?.[0]}
+                alt={`${product.name} - ${categoryData?.name || product.category}`}
+                className="object-contain h-full w-full cursor-zoom-in transition-transform duration-500 hover:scale-105"
+                onClick={() => setShowZoom(true)}
+              />
+              <button
+                onClick={() => setShowZoom(true)}
+                className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow hover:scale-105 transition"
+                aria-label="Zoom image"
+              >
+                <ZoomIn className="text-gray-600 w-5 h-5" />
+              </button>
             </div>
-          )}
-        </div>
 
-        {/* Right: Product Info */}
-        <div className="flex-1 flex flex-col justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-3">{product.name}</h1>
-            <p className="text-gray-600 leading-relaxed mb-6">
-              {Array.isArray(product.description)
-                ? product.description.join(" ")
-                : product.description}
-            </p>
-
-            {/* Weight Selector */}
-            {product.weights?.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-lg mb-2">Select Weight</h3>
-                <div className="flex flex-wrap gap-3">
-                  {product.weights.map((w) => (
-                    <button
-                      key={w._id}
-                      onClick={() => setSelectedWeight(w)}
-                      className={`px-4 py-2 rounded-full border font-medium transition ${
-                        selectedWeight?.weight === w.weight
-                          ? "bg-green-600 text-white border-green-600"
-                          : "border-gray-300 text-gray-700 hover:border-green-600"
-                      }`}
-                    >
-                      {w.weight}
-                    </button>
-                  ))}
-                </div>
+            {product.image?.length > 1 && (
+              <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
+                {product.image.map((img, index) => (
+                  <img
+                    key={index}
+                    src={img}
+                    alt={`${product.name} view ${index + 1}`}
+                    onClick={() => setThumbnail(index)}
+                    className={`w-20 h-20 rounded-xl border-2 object-cover cursor-pointer transition-all ${
+                      thumbnail === index
+                        ? "border-green-600 shadow-md"
+                        : "border-gray-200 hover:border-green-400"
+                    }`}
+                    loading="lazy"
+                  />
+                ))}
               </div>
             )}
+          </div>
 
-            {/* Price Section */}
-            <div className="flex items-center gap-4 py-4">
-              <span className="text-5xl font-extrabold text-green-600">
-                {currency}
-                {currentOfferPrice}
-              </span>
-              {discount > 0 && (
-                <>
-                  <span className="text-2xl text-gray-400 line-through">
-                    {currency}
-                    {currentPrice}
-                  </span>
-                  <span className="text-md bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
-                    Save {discount}%
-                  </span>
-                </>
-              )}
-            </div>
-
-            {/* Add to Cart or Quantity Control */}
-            <div className="mt-6 flex flex-col sm:flex-row gap-3">
-              {isInCart ? (
-                <>
-                  <div className="flex items-center justify-between border rounded-xl w-full sm:w-1/2">
-                    <button
-                      onClick={() => handleUpdateCart(cartItems[cartKey] - 1)}
-                      className="px-4 py-2 text-lg font-semibold hover:text-green-600"
-                    >
-                      −
-                    </button>
-                    <span className="px-4 py-2 font-semibold text-gray-800 border-x border-gray-200">
-                      {cartItems[cartKey]}
-                    </span>
-                    <button
-                      onClick={() => handleUpdateCart(cartItems[cartKey] + 1)}
-                      className="px-4 py-2 text-lg font-semibold hover:text-green-600"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => {
-                      handleAddToCart();
-                      navigate("/cart");
-                    }}
-                    className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
-                  >
-                    Buy Now
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={handleAddToCart}
-                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition"
-                  >
-                    <ShoppingCart size={20} />
-                    Add to Cart
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleAddToCart();
-                      navigate("/cart");
-                    }}
-                    className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
-                  >
-                    Buy Now
-                  </button>
-                </>
-              )}
-            </div>
-
-            {addedMessage && (
-              <p className="text-green-700 text-sm font-medium bg-green-50 border border-green-200 rounded-lg py-2 mt-3 text-center">
-                ✓ Added to cart successfully!
+          {/* Right: Product Info */}
+          <div className="flex-1 flex flex-col justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-3">{product.name}</h1>
+              <p className="text-gray-600 leading-relaxed mb-6">
+                {Array.isArray(product.description)
+                  ? product.description.join(" ")
+                  : product.description}
               </p>
-            )}
-          </div>
 
-          {/* Guarantee Icons */}
-          <div className="mt-10 grid grid-cols-3 gap-6 text-gray-600">
-            <div className="flex flex-col items-center">
-              <Truck size={28} className="text-green-600 mb-1" />
-              <span className="text-sm font-medium">Fast Delivery</span>
+              {/* Weight Selector */}
+              {product.weights?.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-semibold text-lg mb-2">Select Weight</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {product.weights.map((w) => (
+                      <button
+                        key={w._id}
+                        onClick={() => setSelectedWeight(w)}
+                        className={`px-4 py-2 rounded-full border font-medium transition ${
+                          selectedWeight?.weight === w.weight
+                            ? "bg-green-600 text-white border-green-600"
+                            : "border-gray-300 text-gray-700 hover:border-green-600"
+                        }`}
+                      >
+                        {w.weight}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Price Section */}
+              <div className="flex items-center gap-4 py-4">
+                <span className="text-5xl font-extrabold text-green-600">
+                  {currency}
+                  {currentOfferPrice}
+                </span>
+                {discount > 0 && (
+                  <>
+                    <span className="text-2xl text-gray-400 line-through">
+                      {currency}
+                      {currentPrice}
+                    </span>
+                    <span className="text-md bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
+                      Save {discount}%
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Add to Cart or Quantity Control */}
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                {isInCart ? (
+                  <>
+                    <div className="flex items-center justify-between border rounded-xl w-full sm:w-1/2">
+                      <button
+                        onClick={() => handleUpdateCart(cartItems[cartKey] - 1)}
+                        className="px-4 py-2 text-lg font-semibold hover:text-green-600"
+                        aria-label="Decrease quantity"
+                      >
+                        −
+                      </button>
+                      <span className="px-4 py-2 font-semibold text-gray-800 border-x border-gray-200">
+                        {cartItems[cartKey]}
+                      </span>
+                      <button
+                        onClick={() => handleUpdateCart(cartItems[cartKey] + 1)}
+                        className="px-4 py-2 text-lg font-semibold hover:text-green-600"
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => {
+                        handleAddToCart();
+                        navigate("/cart");
+                      }}
+                      className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
+                    >
+                      Buy Now
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleAddToCart}
+                      className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition"
+                    >
+                      <ShoppingCart size={20} />
+                      Add to Cart
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleAddToCart();
+                        navigate("/cart");
+                      }}
+                      className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
+                    >
+                      Buy Now
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {addedMessage && (
+                <p className="text-green-700 text-sm font-medium bg-green-50 border border-green-200 rounded-lg py-2 mt-3 text-center">
+                  ✓ Added to cart successfully!
+                </p>
+              )}
             </div>
-            <div className="flex flex-col items-center">
-              <Shield size={28} className="text-green-600 mb-1" />
-              <span className="text-sm font-medium">Secure Packaging</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <ShoppingCart size={28} className="text-green-600 mb-1" />
-              <span className="text-sm font-medium">Trusted Quality</span>
+
+            {/* Guarantee Icons */}
+            <div className="mt-10 grid grid-cols-3 gap-6 text-gray-600">
+              <div className="flex flex-col items-center">
+                <Truck size={28} className="text-green-600 mb-1" />
+                <span className="text-sm font-medium">Fast Delivery</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <Shield size={28} className="text-green-600 mb-1" />
+                <span className="text-sm font-medium">Secure Packaging</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <ShoppingCart size={28} className="text-green-600 mb-1" />
+                <span className="text-sm font-medium">Trusted Quality</span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </article>
 
-      {/* Related Products */}
-      {relatedProducts.length > 0 && (
-        <div className="mt-16 max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Related Products
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {relatedProducts.map((related) => (
-              <ProductCard key={related._id} product={related} />
-            ))}
-          </div>
-        </div>
-      )}
+        {/* Related Products */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-16 max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+              Related Products
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              {relatedProducts.map((related) => (
+                <ProductCard key={related._id} product={related} />
+              ))}
+            </div>
+          </section>
+        )}
 
-      {/* Zoom Modal */}
-      {showZoom && (
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-          onClick={() => setShowZoom(false)}
-        >
+        {/* Zoom Modal */}
+        {showZoom && (
           <div
-            className="relative"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+            onClick={() => setShowZoom(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Image zoom"
           >
-            <img
-              src={product.image?.[thumbnail] ?? product.image?.[0]}
-              alt="Zoomed"
-              className="max-w-[90vw] max-h-[80vh] rounded-lg object-contain"
-            />
-            <button
-              onClick={() => setShowZoom(false)}
-              className="absolute top-3 right-3 bg-white/80 p-2 rounded-full"
+            <div
+              className="relative"
+              onClick={(e) => e.stopPropagation()}
             >
-              ✕
-            </button>
+              <img
+                src={product.image?.[thumbnail] ?? product.image?.[0]}
+                alt={`${product.name} - zoomed view`}
+                className="max-w-[90vw] max-h-[80vh] rounded-lg object-contain"
+              />
+              <button
+                onClick={() => setShowZoom(false)}
+                className="absolute top-3 right-3 bg-white/80 p-2 rounded-full"
+                aria-label="Close zoom"
+              >
+                ✕
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };
 

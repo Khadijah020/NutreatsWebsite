@@ -14,7 +14,7 @@ const SellerLogin = () => {
         try {
             event.preventDefault();
             const { data } = await axios.post('/api/seller/login', { email, password })
-            console.log("Login response:", data);
+            //console.log("Login response:", data);
 
             if (data.success) {
                 setIsSeller(true),

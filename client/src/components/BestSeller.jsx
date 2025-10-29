@@ -104,7 +104,6 @@ const BestSeller = () => {
       <button
         onClick={() => {
           navigate("/products");
-          scrollTo(0, 0);
         }}
         className="text-green-700 hover:text-green-800 font-medium transition mt-8 block mx-auto"
       >

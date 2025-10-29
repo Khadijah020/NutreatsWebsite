@@ -120,9 +120,12 @@ const Categories = () => {
               <div
                 key={category._id}
                 onClick={() => {
-                  navigate(`/products/${category.name.toLowerCase()}`);
-                  scrollTo(0, 0);
-                }}
+  // Smooth out navigation to category page
+  setTimeout(() => {
+    navigate(`/${category.name.toLowerCase()}`, { state: { fromHome: true } });
+  }, 50);
+}}
+
                 className="cursor-pointer group flex flex-col items-center bg-white rounded-2xl shadow-sm hover:shadow-md 
                            hover:scale-[1.05] transition-all duration-300 min-w-[140px] sm:min-w-[170px] md:min-w-[190px] 
                            p-3 sm:p-4"

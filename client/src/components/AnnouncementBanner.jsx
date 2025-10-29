@@ -18,7 +18,7 @@ const AnnouncementBanner = () => {
     <div className="bg-green-800 py-2 text-center text-white font-semibold text-base md:text-lg shadow-md">
       <p key={index} className="transition-all duration-700 ease-in-out animate-fade">{messages[index]}</p>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fade {
           0%, 100% { opacity: 0; transform: translateY(-10px); }
           10%, 80% { opacity: 1; transform: translateY(0); } /* stays visible here */

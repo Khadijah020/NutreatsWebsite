@@ -27,40 +27,47 @@ import Customers from './pages/seller/Customers.jsx'
 import CustomerDetails from './pages/seller/CustomerDetails.jsx'
 
 const App = () => {
-
   const isSellerPath = useLocation().pathname.includes("seller");
   const {showUserLogin, isSeller} = useAppContext()
+  
   return (
     <div className='text-default min-h-screen text-gray-700 bg-[#e6dbcee0]'>
       {isSellerPath ? null : <Navbar/>}
       {isSellerPath ? null : <AnnouncementBanner/>}
       {showUserLogin ? <Login/> : null}
       <Toaster />
-    <div className={isSellerPath ? "" : "x-6 md:px-16 lg:px-24 xl:px-16"}>
-      <ScrollToTop />
-    <Routes>
-      <Route path='/' element={<Home/>}/>
-      <Route path='/products' element={<AllProducts/>}/>
-      <Route path='/products/:category' element={<ProductCategory/>}/>
-      <Route path='/products/:category/:id' element={<ProductDetails/>}/>
-      <Route path='/seller/edit-product/:id' element={<EditProductDetails/>}/>
-      <Route path='/cart' element={<Cart/>}/>
-      <Route path='/add-address' element={<AddAddress/>}/>
-      <Route path='/my-orders' element={<MyOrders/>}/>
-      <Route path='/seller' element={ isSeller? <SellerLayout/> : <SellerLogin/>}>
-        <Route index element={isSeller ? <Customers/> : null } />
-        <Route path='product-list' element={<ProductList/>} />
-        <Route path='orders' element={<Orders/>} />
-        <Route path='orders/:id' element={<OrderDetails />} />
-        <Route path='add-product' element={<AddProduct />} />
-        <Route path='customers/:id' element={<CustomerDetails />} />
-        <Route path='category' element={<CategoryManagement />} />
-        <Route path='create-bill' element={<CreateBill />} />
-      </Route>
+      
+      <div className={isSellerPath ? "" : "x-6 md:px-16 lg:px-24 xl:px-16"}>
+        <ScrollToTop />
+        
+        <Routes>
+          {/* ====== STATIC ROUTES FIRST ====== */}
+          <Route path='/' element={<Home/>}/>
+          <Route path='/products' element={<AllProducts/>}/>
+          <Route path='/cart' element={<Cart/>}/>
+          <Route path='/add-address' element={<AddAddress/>}/>
+          <Route path='/my-orders' element={<MyOrders/>}/>
+          
+          {/* ====== SELLER ROUTES ====== */}
+          <Route path='/seller/edit-product/:id' element={<EditProductDetails/>}/>
+          <Route path='/seller' element={isSeller ? <SellerLayout/> : <SellerLogin/>}>
+            <Route index element={isSeller ? <Customers/> : null } />
+            <Route path='product-list' element={<ProductList/>} />
+            <Route path='orders' element={<Orders/>} />
+            <Route path='orders/:id' element={<OrderDetails />} />
+            <Route path='add-product' element={<AddProduct />} />
+            <Route path='customers/:id' element={<CustomerDetails />} />
+            <Route path='category' element={<CategoryManagement />} />
+            <Route path='create-bill' element={<CreateBill />} />
+          </Route>
 
-    </Routes>
-    </div>
-   { !isSellerPath && <Footer/>}
+          {/* ====== DYNAMIC ROUTES LAST ====== */}
+          <Route path='/:category' element={<ProductCategory/>}/>
+          <Route path='/:category/:slug' element={<ProductDetails/>}/>
+        </Routes>
+      </div>
+      
+      {!isSellerPath && <Footer/>}
     </div>
   )
 }

@@ -60,8 +60,8 @@ const ProductCard = ({ product }) => {
   return (
     <div
       onClick={() => {
-        navigate(`/products/${product.category.toLowerCase()}/${product._id}`);
-        scrollTo(0, 0);
+       navigate(`/${product.category.toLowerCase()}/${product.slug}`);
+     
       }}
       className="group border border-gray-200 rounded-xl p-3 md:p-4 bg-white opacity-90
             hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:border-green-300
