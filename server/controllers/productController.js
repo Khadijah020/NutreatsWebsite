@@ -3,28 +3,23 @@ import Product from "../models/Product.js"
 import { slugify, generateUniqueSlug } from "../utils/slugify.js"
 
 // Add Product
+// ✅ FIX 1: addProduct - Keep description as string
 export const addProduct = async (req, res) => {
   try {
-    // Parse the JSON data from FormData
     const productData = JSON.parse(req.body.productData);
     const { name, description, category, price, offerPrice, weights } = productData;
 
     console.log('➕ Adding product:', name);
+    console.log('📝 Description received:', description);
+    console.log('📝 Description type:', typeof description);
 
-    // Validate name exists
     if (!name || name.trim() === '') {
       return res.json({ success: false, message: "Product name is required" });
     }
 
-    // Generate base slug from product name
     const baseSlug = slugify(name);
-    console.log('🔗 Base slug:', baseSlug);
-    
-    // Generate unique slug (handles duplicates)
     const slug = await generateUniqueSlug(baseSlug, Product);
-    console.log('✅ Unique slug:', slug);
 
-    // Handle image uploads
     const images = req.files;
     let imagesUrl = [];
 
@@ -40,11 +35,11 @@ export const addProduct = async (req, res) => {
       );
     }
 
-    // Create product object
-    const newProduct = {
+    // ✅ IMPORTANT: Keep description as string, don't convert to array
+    const product = new Product({
       name,
       slug,
-      description: Array.isArray(description) ? description : description.split('\n'),
+      description: description || '', // ← Keep as string!
       category,
       price: weights && weights.length > 0 ? null : Number(price),
       offerPrice: weights && weights.length > 0 ? null : Number(offerPrice),
@@ -52,12 +47,11 @@ export const addProduct = async (req, res) => {
       weights: weights || [],
       inStock: true,
       date: Date.now()
-    };
+    });
 
-    const product = new Product(newProduct);
     await product.save();
     
-    console.log('✅ Product saved with slug:', product.slug);
+    console.log('✅ Product saved with description type:', typeof product.description);
     
     res.json({ 
       success: true, 
@@ -70,38 +64,55 @@ export const addProduct = async (req, res) => {
   }
 };
 
-// Update Product (also add slug update)
+// Update Product
+// ✅ FIX 2: updateProduct - Keep description as string
 export const updateProduct = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, description, category, price, offerPrice, image, weights } = req.body;
+    const { id, name, description, category, price, offerPrice, image, weights, inStock } = req.body;
+    
+    console.log('🔄 Updating product:', id);
+    console.log('📝 Description received:', description);
+    console.log('📝 Description type:', typeof description);
     
     const updateData = {
-      description: description.split(',').map(desc => desc.trim()),
       category,
-      price: Number(price),
-      offerPrice: Number(offerPrice),
-      image,
-      weights: weights || []
+      price: Number(price) || 0,
+      offerPrice: Number(offerPrice) || 0,
+      image: image || [],
+      weights: weights || [],
+      inStock: inStock !== undefined ? inStock : true
     };
+
+    // ✅ Keep description as string - don't convert to array!
+    if (description !== undefined) {
+      updateData.description = description || '';
+    }
     
     // If name changed, regenerate slug
     if (name) {
       const product = await Product.findById(id);
-      if (product.name !== name) {
+      if (product && product.name !== name) {
         const baseSlug = slugify(name);
         updateData.slug = await generateUniqueSlug(baseSlug, Product, id);
         updateData.name = name;
+        console.log('🔗 Updated slug:', updateData.slug);
       }
     }
 
-    await Product.findByIdAndUpdate(id, updateData);
-    res.json({ success: true, message: "Product updated successfully" });
+    const updated = await Product.findByIdAndUpdate(id, updateData, { new: true });
+    
+    if (!updated) {
+      return res.json({ success: false, message: 'Product not found' });
+    }
+    
+    console.log('✅ Product updated, description type:', typeof updated.description);
+    res.json({ success: true, message: "Product updated successfully", product: updated });
   } catch (error) {
-    console.error(error);
+    console.error('❌ Update error:', error);
     res.json({ success: false, message: error.message });
   }
 };
+
 
 
 //List Products: /api/product/list

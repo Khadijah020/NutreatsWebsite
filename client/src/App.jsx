@@ -31,7 +31,7 @@ const App = () => {
   const {showUserLogin, isSeller} = useAppContext()
   
   return (
-    <div className='text-default min-h-screen text-gray-700 bg-[#e6dbcee0]'>
+    <div className='text-default min-h-screen text-gray-700 bg-white'>
       {isSellerPath ? null : <Navbar/>}
       {isSellerPath ? null : <AnnouncementBanner/>}
       {showUserLogin ? <Login/> : null}

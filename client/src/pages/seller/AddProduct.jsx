@@ -3,6 +3,8 @@ import { assets } from "../../assets/assets";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { PlusCircle, X, Upload } from "lucide-react";
+import RichTextEditor from "../../components/seller/RichTextEditor.jsx";
+
 
 const AddProduct = () => {
   const [files, setFiles] = useState([]);
@@ -61,53 +63,54 @@ const AddProduct = () => {
     setWeights(weights.filter((_, i) => i !== index));
   };
 
-  const onSubmitHandler = async (event) => {
-    event.preventDefault();
+  // In your AddProduct component, update the onSubmitHandler:
 
-    if (!weights.length && (!price || !offerPrice)) {
-      toast.error("Please add base price or at least one weight variant.");
-      return;
-    }
+const onSubmitHandler = async (event) => {
+  event.preventDefault();
 
-    if (!category) {
-      toast.error("Please select a category");
-      return;
-    }
+  if (!weights.length && (!price || !offerPrice)) {
+    toast.error("Please add base price or at least one weight variant.");
+    return;
+  }
 
-    try {
-      setLoading(true);
-      const productData = {
-        name,
-        description: description.split("\n"),
-        category,
-        price: weights.length ? null : price,
-        offerPrice: weights.length ? null : offerPrice,
-        weights,
-      };
+  if (!category) {
+    toast.error("Please select a category");
+    return;
+  }
 
-      const formData = new FormData();
-      formData.append("productData", JSON.stringify(productData));
-      files.forEach((file) => file && formData.append("images", file));
+  try {
+    setLoading(true);
+    const productData = {
+      name,
+      description: description || "", // ✅ Ensure it's a string, not array
+      category,
+      price: weights.length ? null : price,
+      offerPrice: weights.length ? null : offerPrice,
+      weights,
+    };
 
-      const { data } = await axios.post("/api/product/add", formData);
+    const formData = new FormData();
+    formData.append("productData", JSON.stringify(productData));
+    files.forEach((file) => file && formData.append("images", file));
 
-      if (data.success) {
-        toast.success(data.message);
-        setName("");
-        setDescription("");
-        setCategory("");
-        setPrice("");
-        setOfferPrice("");
-        setFiles([]);
-        setWeights([]);
-      } else toast.error(data.message);
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const { data } = await axios.post("/api/product/add", formData);
 
+    if (data.success) {
+      toast.success(data.message);
+      setName("");
+      setDescription(""); // ✅ Reset to empty string
+      setCategory("");
+      setPrice("");
+      setOfferPrice("");
+      setFiles([]);
+      setWeights([]);
+    } else toast.error(data.message);
+  } catch (error) {
+    toast.error(error.message);
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="min-h-screen bg-[#e6dbcee0] flex justify-center items-start py-8 md:py-12 overflow-y-auto">
       <form
@@ -189,13 +192,11 @@ const AddProduct = () => {
             <label className="font-medium block mb-1 text-gray-700">
               Description
             </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              placeholder="Describe your product..."
-              className="w-full border border-gray-300 shadow-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-emerald-400 outline-none resize-none bg-gray-50"
-            />
+            <RichTextEditor
+  value={description}
+  onChange={setDescription}
+  placeholder="Describe your product with formatting..."
+/>
           </div>
 
           <div>

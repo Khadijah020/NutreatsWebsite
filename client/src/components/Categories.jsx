@@ -115,31 +115,65 @@ const Categories = () => {
           ref={scrollRef}
           className="overflow-x-auto scrollbar-hide scroll-smooth"
         >
-          <div className="flex gap-4 sm:gap-6 md:gap-8 px-6 sm:px-12 py-3">
+          <div className="flex gap-6 sm:gap-8 md:gap-10 px-6 sm:px-12 py-3">
             {categories.map((category) => (
               <div
                 key={category._id}
                 onClick={() => {
-  // Smooth out navigation to category page
-  setTimeout(() => {
-    navigate(`/${category.name.toLowerCase()}`, { state: { fromHome: true } });
-  }, 50);
-}}
-
-                className="cursor-pointer group flex flex-col items-center bg-white rounded-2xl shadow-sm hover:shadow-md 
-                           hover:scale-[1.05] transition-all duration-300 min-w-[140px] sm:min-w-[170px] md:min-w-[190px] 
-                           p-3 sm:p-4"
+                  // Smooth out navigation to category page
+                  setTimeout(() => {
+                    navigate(`/${category.name.toLowerCase()}`, { state: { fromHome: true } });
+                  }, 50);
+                }}
+                className="cursor-pointer group flex flex-col items-center bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] 
+                           rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 
+                           min-w-[220px] sm:min-w-[260px] md:min-w-[300px] 
+                           p-5 sm:p-6 md:p-7 border-2 border-amber-200/20 relative overflow-hidden"
               >
-                {category.image && (
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-16 h-16 sm:w-20 sm:h-20 md:w-22 md:h-22 object-contain mb-2"
-                  />
-                )}
-                <p className="text-sm sm:text-base font-semibold text-gray-700 group-hover:text-green-600 transition text-center">
-                  {category.name}
-                </p>
+                {/* Traditional decorative corner pattern */}
+                <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-amber-300/30 rounded-tl-3xl"></div>
+                <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-amber-300/30 rounded-br-3xl"></div>
+                
+                {/* White Inner Card with Content */}
+                <div className="relative bg-[#ecd4d0] rounded-2xl shadow-md w-full p-5 sm:p-6 md:p-7 
+                              flex flex-col items-center group-hover:shadow-xl group-hover:scale-[1.02] 
+                              transition-all duration-500 min-h-[240px] sm:min-h-[280px] md:min-h-[320px]">
+                  
+                  {/* Subtle decorative elements on white card */}
+                  <div className="absolute top-2 right-2 w-8 h-8 border-t border-r border-amber-200/40 rounded-tr-xl"></div>
+                  <div className="absolute bottom-2 left-2 w-8 h-8 border-b border-l border-amber-200/40 rounded-bl-xl"></div>
+                  
+                  {/* Image Container */}
+                  {category.image && (
+                    <div className="relative mb-4 sm:mb-5">
+                      <div className="absolute inset-0 bg-[#AD3A24]/5 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                      <img
+                        src={category.image}
+                        alt={category.name}
+                        className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain 
+                                 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Title */}
+                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-[#AD3A24] group-hover:text-[#8B2E1A] 
+                               transition text-center mb-2 sm:mb-3 tracking-wide">
+                    {category.name}
+                  </h3>
+                  
+                  {/* Description */}
+                  {category.description && (
+                    <p className="text-xs sm:text-sm text-gray-600 group-hover:text-gray-800 transition 
+                                text-center leading-relaxed line-clamp-3 px-1">
+                      {category.description}
+                    </p>
+                  )}
+                  
+                  {/* Decorative bottom accent inside white card */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-[#AD3A24]/30 rounded-full 
+                                group-hover:w-16 group-hover:bg-[#AD3A24]/50 transition-all duration-500"></div>
+                </div>
               </div>
             ))}
           </div>

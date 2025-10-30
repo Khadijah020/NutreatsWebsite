@@ -34,6 +34,10 @@ const ProductDetails = () => {
   
   if (found) {
     setProduct(found);
+    console.log("🧠 Product found:", found);
+console.log("📜 Description type:", typeof found.description);
+console.log("📜 Description value:", found.description);
+
     // ... rest of code
     if (found.weights?.length > 0) setSelectedWeight(found.weights[0]);
 
@@ -259,11 +263,30 @@ const ProductDetails = () => {
           <div className="flex-1 flex flex-col justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-3">{product.name}</h1>
-              <p className="text-gray-600 leading-relaxed mb-6">
-                {Array.isArray(product.description)
-                  ? product.description.join(" ")
-                  : product.description}
-              </p>
+<div
+  className="text-gray-600 leading-relaxed mb-6 prose prose-green max-w-none"
+  dangerouslySetInnerHTML={{
+    __html: (() => {
+      const desc = product.description;
+      
+      // Handle string (correct format)
+      if (typeof desc === "string") {
+        return desc || "No description available.";
+      }
+      
+      // Handle array (legacy format) - convert to string
+      if (Array.isArray(desc)) {
+        const cleaned = desc.filter(item => item && item.trim() !== "");
+        return cleaned.length > 0 
+          ? cleaned.join(" ") 
+          : "No description available.";
+      }
+      
+      return "No description available.";
+    })(),
+  }}
+/>
+
 
               {/* Weight Selector */}
               {product.weights?.length > 0 && (

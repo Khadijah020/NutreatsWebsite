@@ -38,7 +38,7 @@ const Navbar = () => {
   }, [searchQuery]);
 
   return (
-    <nav className="flex items-center justify-between px-4 md:px-10 lg:px-16 py-2.5 bg-[#f3efe9] backdrop-blur-sm border-b border-gray-100 shadow-sm sticky top-0 z-50 transition-all">
+    <nav className="flex items-center justify-between px-4 md:px-10 lg:px-16 py-2.5 bg-[#ffffff] backdrop-blur-sm border-b border-gray-100 shadow-sm sticky top-0 z-50 transition-all">
       {/* Logo */}
       <NavLink to="/" onClick={() => setOpen(false)} className="flex items-center">
         <img src={logo} alt="logo" className="w-24 md:w-32 h-auto" />
