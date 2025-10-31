@@ -127,7 +127,7 @@ const Categories = () => {
                 }}
                 className="cursor-pointer group flex flex-col items-center bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] 
                            rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 
-                           min-w-[220px] sm:min-w-[260px] md:min-w-[300px] 
+                           min-w-[240px] sm:min-w-[280px] md:min-w-[320px] 
                            p-5 sm:p-6 md:p-7 border-2 border-amber-200/20 relative overflow-hidden"
               >
                 {/* Traditional decorative corner pattern */}
@@ -137,20 +137,21 @@ const Categories = () => {
                 {/* White Inner Card with Content */}
                 <div className="relative bg-[#ecd4d0] rounded-2xl shadow-md w-full p-5 sm:p-6 md:p-7 
                               flex flex-col items-center group-hover:shadow-xl group-hover:scale-[1.02] 
-                              transition-all duration-500 min-h-[240px] sm:min-h-[280px] md:min-h-[320px]">
+                              transition-all duration-500 min-h-[280px] sm:min-h-[320px] md:min-h-[360px]">
                   
                   {/* Subtle decorative elements on white card */}
                   <div className="absolute top-2 right-2 w-8 h-8 border-t border-r border-amber-200/40 rounded-tr-xl"></div>
                   <div className="absolute bottom-2 left-2 w-8 h-8 border-b border-l border-amber-200/40 rounded-bl-xl"></div>
                   
-                  {/* Image Container */}
+                  {/* Image Container - CHANGED: Made image container larger */}
                   {category.image && (
-                    <div className="relative mb-4 sm:mb-5">
+                    <div className="relative mb-4 sm:mb-5 w-full flex justify-center">
                       <div className="absolute inset-0 bg-[#AD3A24]/5 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
                       <img
                         src={category.image}
                         alt={category.name}
-                        className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain 
+                        // CHANGED: Made images significantly larger
+                        className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 object-contain
                                  group-hover:scale-110 transition-transform duration-500 drop-shadow-lg"
                       />
                     </div>

@@ -14,11 +14,8 @@ const Customers = () => {
   const fetchCustomers = async () => {
     try {
       const { data } = await axios.get('/api/customer/all');
-      if (data.success) {
-        setCustomers(data.customers);
-      } else {
-        toast.error(data.message);
-      }
+      if (data.success) setCustomers(data.customers);
+      else toast.error(data.message);
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -45,152 +42,130 @@ const Customers = () => {
   }
 
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <div className="p-2 sm:p-2.5 bg-green-50 rounded-lg">
-            <Users className="text-green-600" size={20} />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Customers</h1>
-            <p className="text-gray-600 text-xs sm:text-sm hidden sm:block">Manage your customer database</p>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Search customers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm sm:text-base"
-          />
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
-          <p className="text-gray-600 text-xs sm:text-sm mb-1">Total</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900">{customers.length}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
-          <p className="text-gray-600 text-xs sm:text-sm mb-1">With Email</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900">
-            {customers.filter(c => c.email).length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
-          <p className="text-gray-600 text-xs sm:text-sm mb-1">Active</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900">
-            {customers.filter(c => c.orderCount > 0).length}
-          </p>
-        </div>
-      </div>
-
-      {/* Customers List */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        {filteredCustomers.length === 0 ? (
-          <div className="text-center py-8 sm:py-12">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Users className="text-gray-400" size={24} />
+    <div className="min-h-screen bg-[#faf7f2] py-6 px-3 sm:py-8 sm:px-4">
+      <div className="w-full max-w-7xl mx-auto">
+        
+        {/* Header */}
+        <div className="mb-5 sm:mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-amber-100/60 rounded-xl border border-amber-200/50">
+              <Users className="text-[#AD3A24]" size={20} />
             </div>
-            <p className="text-gray-500 text-sm sm:text-base">
-              {searchTerm ? 'No customers found matching your search.' : 'No customers yet.'}
-            </p>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#8B2E1A]">Customers</h1>
+              <p className="text-gray-600 text-xs sm:text-sm">Manage your customer database</p>
+            </div>
           </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {filteredCustomers.map((customer) => (
-              <div
-                key={customer._id}
-                onClick={() => navigate(`/seller/customers/${customer._id}`)}
-                className="p-3 sm:p-4 hover:bg-gray-50 cursor-pointer transition group"
-              >
-                <div className="flex items-start sm:items-center gap-3 sm:gap-4">
-                  {/* Avatar */}
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-                    <span className="text-green-700 font-semibold text-sm sm:text-lg">
-                      {customer.firstName?.charAt(0)}{customer.lastName?.charAt(0)}
-                    </span>
-                  </div>
 
-                  {/* Customer Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1 truncate">
-                      {customer.firstName} {customer.lastName}
-                    </h3>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search customers..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-amber-200/50 rounded-xl focus:ring-1 focus:ring-[#AD3A24] focus:border-[#AD3A24] outline-none bg-white placeholder-gray-400 text-sm sm:text-base"
+            />
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5 sm:mb-6">
+          {[
+            { label: "Total", value: customers.length },
+            { label: "With Email", value: customers.filter(c => c.email).length },
+            { label: "Active", value: customers.filter(c => c.orderCount > 0).length },
+          ].map((item, i) => (
+            <div key={i} className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-xl sm:rounded-2xl p-[2px] border border-amber-200/20">
+              <div className="bg-[#ecd4d0] rounded-lg sm:rounded-xl p-2.5 sm:p-4">
+                <p className="text-[11px] sm:text-sm text-gray-600 mb-1">{item.label}</p>
+                <p className="text-lg sm:text-2xl font-bold text-[#8B2E1A]">{item.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Customer List */}
+        <div className="bg-[#ecd4d0] rounded-xl sm:rounded-2xl shadow border border-amber-200/30">
+          {filteredCustomers.length === 0 ? (
+            <div className="text-center py-10">
+              <Users className="text-[#AD3A24] mx-auto mb-2" size={30} />
+              <p className="text-sm text-gray-600">
+                {searchTerm ? 'No results found.' : 'No customers yet.'}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-amber-200/50">
+              {filteredCustomers.map(customer => (
+                <div
+                  key={customer._id}
+                  className="p-3 sm:p-4 hover:bg-white/50 cursor-pointer transition group"
+                  onClick={() => navigate(`/seller/customers/${customer._id}`)}
+                >
+                  <div className="flex items-center gap-3 sm:gap-4">
                     
-                    {/* Mobile: Stack vertically */}
-                    <div className="flex flex-col gap-1 sm:hidden text-xs text-gray-600">
-                      {customer.phone && (
-                        <div className="flex items-center gap-1">
-                          <Phone size={12} className="text-gray-400 shrink-0" />
-                          <span className="truncate">{customer.phone}</span>
-                        </div>
-                      )}
-                      {customer.email && (
-                        <div className="flex items-center gap-1">
-                          <Mail size={12} className="text-gray-400 shrink-0" />
-                          <span className="truncate">{customer.email}</span>
-                        </div>
-                      )}
+                    {/* Avatar */}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#AD3A24] text-white font-semibold rounded-full flex items-center justify-center text-base sm:text-lg">
+                      {customer.firstName?.charAt(0)}{customer.lastName?.charAt(0)}
                     </div>
 
-                    {/* Desktop: Horizontal */}
-                    <div className="hidden sm:flex flex-wrap gap-3 text-sm text-gray-600">
-                      {customer.phone && (
-                        <div className="flex items-center gap-1">
-                          <Phone size={14} className="text-gray-400" />
-                          <span>{customer.phone}</span>
-                        </div>
-                      )}
-                      {customer.email && (
-                        <div className="flex items-center gap-1">
-                          <Mail size={14} className="text-gray-400" />
-                          <span className="truncate max-w-[200px]">{customer.email}</span>
-                        </div>
-                      )}
-                      {customer.city && (
-                        <div className="flex items-center gap-1">
-                          <MapPin size={14} className="text-gray-400" />
-                          <span>{customer.city}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                        {customer.firstName} {customer.lastName}
+                      </h3>
 
-                  {/* Order Count */}
-                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 sm:gap-2 text-gray-600">
-                        <ShoppingBag size={14} className="sm:w-4 sm:h-4" />
-                        <span className="font-semibold text-gray-900 text-sm sm:text-base">
+                      <div className="flex flex-wrap gap-2 text-[11px] sm:text-sm text-gray-600">
+                        {customer.phone && (
+                          <span className="flex items-center gap-1">
+                            <Phone size={12} />
+                            {customer.phone}
+                          </span>
+                        )}
+                        {customer.email && (
+                          <span className="flex items-center gap-1 max-w-[120px] sm:max-w-[200px] truncate">
+                            <Mail size={12} />
+                            {customer.email}
+                          </span>
+                        )}
+                        {customer.city && (
+                          <span className="flex items-center gap-1">
+                            <MapPin size={12} />
+                            {customer.city}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Order Count */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="text-right">
+                        <div className="text-[13px] sm:text-sm font-semibold text-[#8B2E1A] flex items-center gap-1">
+                          <ShoppingBag size={14} />
                           {customer.orderCount || 0}
+                        </div>
+                        <span className="text-[10px] sm:text-xs text-gray-500">
+                          {customer.orderCount === 1 ? "order" : "orders"}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-500 hidden sm:block">
-                        {customer.orderCount === 1 ? 'order' : 'orders'}
-                      </span>
+                      <ChevronRight size={18} className="text-gray-400 group-hover:text-[#AD3A24]" />
                     </div>
-                    <ChevronRight className="text-gray-400 group-hover:text-gray-600 transition hidden sm:block" size={20} />
+
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer count */}
+        {searchTerm && (
+          <p className="text-xs sm:text-sm text-gray-600 mt-3">
+            Found {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
+          </p>
         )}
       </div>
-
-      {/* Results count */}
-      {searchTerm && (
-        <p className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4">
-          Found {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
-        </p>
-      )}
     </div>
   );
 };

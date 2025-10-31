@@ -11,6 +11,7 @@ const categorySchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  order: { type: Number, default: 0 },
   image: {
     type: String,
     default: ''
@@ -19,7 +20,8 @@ const categorySchema = new mongoose.Schema({
     type: Boolean,
     default: true
   }
-}, {
+},
+ {
   timestamps: true
 })
 
