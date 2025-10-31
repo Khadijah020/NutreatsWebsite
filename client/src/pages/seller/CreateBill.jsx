@@ -209,7 +209,7 @@ export default function CreateBill() {
             <p className="text-gray-600 mt-2">Enter customer details to get started</p>
           </div>
 
-          <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden">
+          <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-20 h-20 border-t border-l border-amber-300/30 rounded-tl-3xl"></div>
             <div className="absolute bottom-0 right-0 w-20 h-20 border-b border-r border-amber-300/30 rounded-br-3xl"></div>
 
@@ -371,7 +371,7 @@ export default function CreateBill() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
+            <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
               <div className="bg-[#ecd4d0] rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-amber-100/60 rounded-xl border border-amber-200/50">
@@ -474,7 +474,7 @@ export default function CreateBill() {
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 sticky top-6">
+            <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 sticky top-6">
               <div className="bg-[#ecd4d0] rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-amber-100/60 rounded-xl border border-amber-200/50">

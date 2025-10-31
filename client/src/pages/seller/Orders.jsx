@@ -72,7 +72,7 @@ const Orders = () => {
                 {/* Orders List */}
                 <div className="space-y-3 sm:space-y-4">
                     {filteredOrders.length === 0 ? (
-                        <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-2xl sm:rounded-3xl p-1.5 border border-amber-200/20">
+                        <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-2xl sm:rounded-3xl p-1.5 border border-amber-200/20">
                             <div className="bg-[#ecd4d0] rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center">
                                 <Package className="mx-auto mb-3 text-[#AD3A24]" size={40} />
                                 <p className="text-gray-700 font-medium text-sm sm:text-base">
@@ -87,7 +87,7 @@ const Orders = () => {
                                 <div
                                     key={order._id}
                                     onClick={() => navigate(`/seller/orders/${order._id}`)}
-                                    className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 border border-amber-200/20 cursor-pointer group hover:shadow-lg transition-all relative overflow-hidden"
+                                    className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 border border-amber-200/20 cursor-pointer group hover:shadow-lg transition-all relative overflow-hidden"
                                 >
                                     <div className="bg-[#ecd4d0] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 relative z-10">
                                         {/* Order Header */}

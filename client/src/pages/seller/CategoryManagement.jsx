@@ -213,7 +213,7 @@ export default function CategoryManagement() {
     {/* ✅ Desktop Table */}
     <div className="hidden md:block bg-white rounded-xl shadow-md overflow-hidden border border-amber-200/30">
       <table className="w-full">
-        <thead className="bg-gradient-to-r from-[#AD3A24] to-[#8B2E1A]">
+        <thead className="bg-linear-to-r from-[#AD3A24] to-[#8B2E1A]">
           <tr>
             <th className="text-left p-4 font-semibold text-white">#</th>
             <th className="text-left p-4 font-semibold text-white">Name</th>
@@ -323,7 +323,7 @@ export default function CategoryManagement() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm p-3 flex items-end md:items-center justify-center z-50">
-        <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="bg-[#ecd4d0] rounded-2xl">
               <div className="flex justify-between items-center p-6 border-b border-amber-200/30 sticky top-0 bg-[#ecd4d0] rounded-t-2xl">
                 <h2 className="text-xl font-bold text-[#8B2E1A]">

@@ -315,7 +315,7 @@ const EditProductDetails = () => {
         </div>
 
         {/* Main Card */}
-        <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden">
+        <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-20 h-20 border-t border-l border-amber-300/30 rounded-tl-3xl"></div>
           <div className="absolute bottom-0 right-0 w-20 h-20 border-b border-r border-amber-300/30 rounded-br-3xl"></div>
 
@@ -545,7 +545,7 @@ const EditProductDetails = () => {
                       <button
                         type="button"
                         onClick={addWeightVariant}
-                        className="flex-1 py-2.5 bg-gradient-to-r from-[#AD3A24] to-[#8B2E1A] text-white rounded-xl hover:from-[#8B2E1A] hover:to-[#AD3A24] font-semibold transition-all shadow-md"
+                        className="flex-1 py-2.5 bg-linear-to-r from-[#AD3A24] to-[#8B2E1A] text-white rounded-xl hover:from-[#8B2E1A] hover:to-[#AD3A24] font-semibold transition-all shadow-md"
                       >
                         {editingWeightIndex !== null
                           ? "Update Weight Variant"
@@ -625,7 +625,7 @@ const EditProductDetails = () => {
                 <button
                   onClick={handleSave}
                   disabled={saving || uploadingImages}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#AD3A24] to-[#8B2E1A] text-white rounded-xl hover:from-[#8B2E1A] hover:to-[#AD3A24] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all shadow-md"
+                  className="flex-1 px-6 py-3 bg-linear-to-r from-[#AD3A24] to-[#8B2E1A] text-white rounded-xl hover:from-[#8B2E1A] hover:to-[#AD3A24] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all shadow-md"
                 >
                   {saving ? "Saving..." : "Save Changes"}
                 </button>

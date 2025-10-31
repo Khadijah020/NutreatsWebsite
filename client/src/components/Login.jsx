@@ -35,7 +35,7 @@ const Login = () => {
         className="relative w-full max-w-md"
       >
         {/* Outer decorative card */}
-        <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border-2 border-amber-200/20 relative overflow-hidden">
+        <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border-2 border-amber-200/20 relative overflow-hidden">
           {/* Decorative corners */}
           <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-amber-300/30 rounded-tl-3xl"></div>
           <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-amber-300/30 rounded-br-3xl"></div>

@@ -77,7 +77,7 @@ const Customers = () => {
             { label: "With Email", value: customers.filter(c => c.email).length },
             { label: "Active", value: customers.filter(c => c.orderCount > 0).length },
           ].map((item, i) => (
-            <div key={i} className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-xl sm:rounded-2xl p-[2px] border border-amber-200/20">
+            <div key={i} className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-xl sm:rounded-2xl p-0.5 border border-amber-200/20">
               <div className="bg-[#ecd4d0] rounded-lg sm:rounded-xl p-2.5 sm:p-4">
                 <p className="text-[11px] sm:text-sm text-gray-600 mb-1">{item.label}</p>
                 <p className="text-lg sm:text-2xl font-bold text-[#8B2E1A]">{item.value}</p>

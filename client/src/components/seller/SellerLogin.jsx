@@ -41,7 +41,7 @@ const SellerLogin = () => {
     <div className="min-h-screen flex items-center justify-center bg-[#faf7f2] px-4 py-8">
       <div className="w-full max-w-md">
         {/* Outer decorative card */}
-        <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden">
+        <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden">
           {/* Decorative corners */}
           <div className="absolute top-0 left-0 w-20 h-20 border-t border-l border-amber-300/30 rounded-tl-3xl"></div>
           <div className="absolute bottom-0 right-0 w-20 h-20 border-b border-r border-amber-300/30 rounded-br-3xl"></div>

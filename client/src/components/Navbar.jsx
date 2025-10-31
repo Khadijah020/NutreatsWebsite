@@ -101,7 +101,7 @@ const Navbar = () => {
           className="relative cursor-pointer hover:opacity-80 transition"
         >
           <img src={assets.nav_cart_icon} alt="cart" className="w-5 opacity-80" />
-          <span className="absolute -top-2 -right-2 text-[10px] font-medium text-white bg-[#AD3A24] w-[16px] h-[16px] flex items-center justify-center rounded-full">
+          <span className="absolute -top-2 -right-2 text-[10px] font-medium text-white bg-[#AD3A24] w-4 h-4 flex items-center justify-center rounded-full">
             {getCartCount()}
           </span>
         </div>

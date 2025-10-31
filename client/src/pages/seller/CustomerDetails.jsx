@@ -138,7 +138,7 @@ const CustomerDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Customer Information Card */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
+            <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
               <div className="bg-[#ecd4d0] rounded-2xl p-6">
                 {/* Avatar */}
                 <div className="flex justify-center mb-4">
@@ -308,7 +308,7 @@ const CustomerDetails = () => {
 
             {/* Stats Card */}
             {!isEditing && (
-              <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
+              <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
                 <div className="bg-[#ecd4d0] rounded-2xl p-6">
                   <h3 className="font-semibold text-[#8B2E1A] mb-4">Statistics</h3>
                   <div className="space-y-3">
@@ -339,7 +339,7 @@ const CustomerDetails = () => {
 
           {/* Orders List */}
           <div className="lg:col-span-2">
-            <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
+            <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
               <div className="bg-[#ecd4d0] rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Package className="text-[#AD3A24]" size={18} />

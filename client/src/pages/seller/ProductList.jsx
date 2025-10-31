@@ -183,7 +183,7 @@ const ProductList = () => {
         {/* Product Cards */}
         <div className="flex flex-col gap-3 sm:gap-4">
           {filteredProducts.length === 0 ? (
-            <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 border border-amber-200/20">
+            <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 border border-amber-200/20">
               <div className="bg-[#ecd4d0] rounded-xl sm:rounded-2xl p-8 sm:p-10 text-center">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-amber-100/60 border border-amber-200/50 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Package className="text-[#AD3A24]" size={24} />
@@ -197,13 +197,13 @@ const ProductList = () => {
             </div>
           ) : (
             filteredProducts.map((product) => (
-              <div key={product._id} className="w-full bg-[#AD3A24] p-[1px] rounded-xl sm:rounded-2xl shadow-md">
+              <div key={product._id} className="w-full bg-[#AD3A24] p-px rounded-xl sm:rounded-2xl shadow-md">
                 <div className="bg-[#ecd4d0] rounded-xl sm:rounded-2xl overflow-hidden">
                   {/* Main Row */}
                   <div className="p-2.5 sm:p-3 md:p-4 flex flex-col gap-2.5 sm:gap-3 w-full">
                     {/* Top Section: Image + Info */}
                     <div className="flex gap-2.5 sm:gap-3 items-center">
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         <img
                           src={(product.image && product.image[0]) || ''}
                           alt={product.name}
@@ -293,7 +293,7 @@ const ProductList = () => {
                         {product.weights.map((w, i) => (
                           <div
                             key={i}
-                            className="flex-shrink-0 bg-white border rounded-lg sm:rounded-xl px-2.5 py-2 min-w-[120px] sm:min-w-[140px] shadow"
+                            className="shrink-0 bg-white border rounded-lg sm:rounded-xl px-2.5 py-2 min-w-[120px] sm:min-w-[140px] shadow"
                           >
                             <div className="text-xs sm:text-sm font-semibold text-gray-900">{w.weight}</div>
                             <div className="text-right mt-1">

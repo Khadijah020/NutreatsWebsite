@@ -130,7 +130,7 @@ const OrderDetails = () => {
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
                 order.isPaid
                   ? 'bg-white/80 text-red-700 border-2 border-red-300 hover:bg-white hover:border-red-400'
-                  : 'bg-gradient-to-r from-[#AD3A24] to-[#8B2E1A] text-white hover:from-[#8B2E1A] hover:to-[#AD3A24]'
+                  : 'bg-linear-to-r from-[#AD3A24] to-[#8B2E1A] text-white hover:from-[#8B2E1A] hover:to-[#AD3A24]'
               }`}
             >
               {updatingPayment ? (
@@ -168,7 +168,7 @@ const OrderDetails = () => {
           {/* Main Content - Products */}
           <div className="lg:col-span-2 space-y-6">
             {/* Products Card */}
-            <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden">
+            <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-20 h-20 border-t border-l border-amber-300/30 rounded-tl-3xl"></div>
               <div className="absolute bottom-0 right-0 w-20 h-20 border-b border-r border-amber-300/30 rounded-br-3xl"></div>
 
@@ -277,7 +277,7 @@ const OrderDetails = () => {
 
           {/* Sidebar - Combined Info Card */}
           <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
+            <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20">
               <div className="bg-[#ecd4d0] rounded-2xl p-6 space-y-6">
                 {/* Order Status */}
                 <div className="pb-6 border-b border-amber-200/50">

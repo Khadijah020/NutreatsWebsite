@@ -111,7 +111,7 @@ const AddProduct = () => {
     <div className="min-h-screen bg-[#faf7f2] flex justify-center items-start py-8 md:py-12 overflow-y-auto">
       <form
         onSubmit={onSubmitHandler}
-        className="w-full max-w-6xl mx-auto bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden"
+        className="w-full max-w-6xl mx-auto bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden"
       >
         {/* Decorative corners */}
         <div className="absolute top-0 left-0 w-20 h-20 border-t border-l border-amber-300/30 rounded-tl-3xl"></div>

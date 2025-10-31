@@ -90,14 +90,14 @@ const MyOrders = () => {
           </div>
 
           {loading ? (
-            <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border-2 border-amber-200/20 relative overflow-hidden">
+            <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border-2 border-amber-200/20 relative overflow-hidden">
               <div className="bg-[#ecd4d0] rounded-2xl p-12 text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#AD3A24] border-t-transparent mx-auto mb-4"></div>
                 <p className="text-gray-600 font-medium">Loading your orders...</p>
               </div>
             </div>
           ) : orders.length === 0 ? (
-            <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border-2 border-amber-200/20 relative overflow-hidden">
+            <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border-2 border-amber-200/20 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-amber-300/30 rounded-tl-3xl"></div>
               <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-amber-300/30 rounded-br-3xl"></div>
               
@@ -123,7 +123,7 @@ const MyOrders = () => {
               {orders.map((order) => (
                 <article
                   key={order._id}
-                  className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border-2 border-amber-200/20 relative overflow-hidden hover:shadow-xl transition"
+                  className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border-2 border-amber-200/20 relative overflow-hidden hover:shadow-xl transition"
                 >
                   <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-amber-300/30 rounded-tl-3xl"></div>
                   <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-amber-300/30 rounded-br-3xl"></div>
