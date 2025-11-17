@@ -1,171 +1,274 @@
-import React, { useState } from "react";
-import { assets } from "../assets/assets";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useAppContext } from "../context/AppContext";
 
 const ProductCard = ({ product }) => {
   const { currency, addToCart, removeFromCart, cartItems, navigate } = useAppContext();
-  
-  // NEW: Selected weight state
+  const [categoryData, setCategoryData] = useState(null);
+  const [showWeightPopup, setShowWeightPopup] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Weight selection that ONLY affects popup/cart — NOT the card display
   const [selectedWeight, setSelectedWeight] = useState(
-    product?.weights?.length > 0 ? product.weights[0] : null
+    product?.weights?.[0] || null
   );
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+  // Fetch category name
+  useEffect(() => {
+    const load = async () => {
+      if (!product?.category) return;
+
+      try {
+        const response = await fetch(`${backendUrl}api/category/list`);
+        const data = await response.json();
+        if (data.success) {
+          const foundCategory = data.categories.find(
+            (c) => c.name.toLowerCase() === product.category.toLowerCase()
+          );
+          setCategoryData(foundCategory);
+        }
+      } catch (err) {
+        console.error("Category load error:", err);
+      }
+    };
+
+    load();
+  }, [product?.category, backendUrl]);
 
   if (!product) return null;
 
-  // NEW: Use selected weight price or base price
-  const currentPrice = selectedWeight ? selectedWeight.price : product.price;
-  const currentOfferPrice = selectedWeight ? selectedWeight.offerPrice : product.offerPrice;
+  // -------------------------
+  // CARD PRICE (STATIC)
+  // -------------------------
+  const basePrice = product.weights?.length
+    ? product.weights[0].price
+    : product.price;
 
-  const calculateDiscount = () => {
-    if (currentPrice > currentOfferPrice) {
-      return Math.round(((currentPrice - currentOfferPrice) / currentPrice) * 100);
-    }
-    return 0;
-  };
+  const baseOfferPrice = product.weights?.length
+    ? product.weights[0].offerPrice
+    : product.offerPrice;
 
-  const discount = calculateDiscount();
-  
-  // NEW: Cart key includes weight if variants exist
-  const cartKey = selectedWeight 
-    ? `${product._id}_${selectedWeight.weight}` 
+  const baseDiscount =
+    basePrice > baseOfferPrice
+      ? Math.round(((basePrice - baseOfferPrice) / basePrice) * 100)
+      : 0;
+
+  // -------------------------
+  // CART LOGIC
+  // -------------------------
+  const cartKey = selectedWeight
+    ? `${product._id}_${selectedWeight.weight}`
     : product._id;
-  
+
   const quantity = cartItems?.[cartKey] || 0;
 
-  return (
-    <div
-  onClick={() => {
-    navigate(`/products/${product.category.toLowerCase()}/${product._id}`);
-    scrollTo(0, 0);
-  }}
-  className="group border border-gray-200 rounded-xl p-3 md:p-4 bg-white opacity-90
-        hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:border-green-300
-        transform hover:-translate-y-2 hover:scale-[1.03] transition-all duration-500
-        ease-in-out cursor-pointer w-full flex flex-col justify-between
-        h-full min-h-[300px] sm:min-h-[330px] max-h-[360px]"
->
+  const handleAddClick = (e) => {
+    e.stopPropagation();
+    if (product.weights?.length > 0) {
+      setShowWeightPopup(true);
+    } else {
+      addToCart(cartKey, selectedWeight);
+    }
+  };
 
-      {/* Image Container */}
-      <div className="flex items-center justify-center h-40 sm:h-48 mb-3 overflow-hidden rounded-md">
-        <img
-          className="group-hover:scale-110 transition-transform duration-500 ease-in-out h-full w-full object-contain"
-          src={product.image[0]}
-          alt={product.name}
-        />
-      </div>
+  // -------------------------
+  // WEIGHT POPUP (PORTAL)
+  // -------------------------
+  const WeightPopup = () => (
+    <>
+      <div
+        onClick={() => setShowWeightPopup(false)}
+        className="fixed inset-0 bg-black/30 z-[9998]"
+      />
 
-      {/* Product Info */}
-      <div className="space-y-2">
-        <p className="text-gray-500 text-xs sm:text-sm">{product.category}</p>
-
-        <p
-          className="text-gray-800 font-medium text-sm sm:text-base truncate w-full"
-          title={product.name}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="fixed z-[9999] bg-white rounded-2xl shadow-2xl p-6 border-2 border-[#EB8A14] w-[90%] sm:w-[400px] max-h-[80vh] overflow-y-auto bottom-4 right-4"
+      >
+        <button
+          onClick={() => setShowWeightPopup(false)}
+          className="absolute top-4 right-4 text-[#785427] hover:text-[#96580D] w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#bfd9bd]/30 transition-colors border border-[#EB8A14]"
         >
-          {product.name}
-        </p>
+          ✕
+        </button>
 
-        {/* Rating */}
-        <div className="flex items-center gap-1">
-          {Array(5)
-            .fill('')
-            .map((_, i) => (
-              <img
+        <h3 className="text-xl font-bold text-[#0a6134] mb-5 pr-8">Select Weight</h3>
+
+        <div className="space-y-3 mb-6">
+          {product.weights.map((w, i) => {
+            const isSelected = selectedWeight?.weight === w.weight;
+            const wDiscount =
+              w.price > w.offerPrice
+                ? Math.round(((w.price - w.offerPrice) / w.price) * 100)
+                : 0;
+
+            return (
+              <button
                 key={i}
-                className="w-3 md:w-3.5"
-                src={
-                  i < (product.rating || 4)
-                    ? assets.star_icon
-                    : assets.star_dull_icon
-                }
-                alt="star"
-              />
-            ))}
-          <p className="text-xs text-gray-500 ml-1">
-            ({product.reviewCount || 4})
-          </p>
+                onClick={() => setSelectedWeight(w)}
+                className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${
+                  isSelected
+                    ? "border-[#EB8A14] bg-[#bfd9bd]/30 shadow-md"
+                    : "border-gray-200 hover:border-[#EB8A14] hover:bg-[#bfd9bd]/10"
+                }`}
+              >
+                <div className="flex justify-between">
+                  <div>
+                    <span className="font-bold">{w.weight}</span>
+                    {wDiscount > 0 && (
+                      <span className="text-xs text-[#EB8A14] font-semibold block">
+                        {wDiscount}% OFF
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[#0a6134] font-bold text-lg block">
+                      {currency}
+                      {w.offerPrice}
+                    </span>
+                    {wDiscount > 0 && (
+                      <span className="text-xs line-through text-gray-500">
+                        {currency}
+                        {w.price}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* NEW: Weight Selector */}
-        {product.weights && product.weights.length > 0 && (
-          <div onClick={(e) => e.stopPropagation()} className="pt-2">
-            <select
-              value={selectedWeight?.weight || ''}
-              onChange={(e) => {
-                const weight = product.weights.find(w => w.weight === e.target.value);
-                setSelectedWeight(weight);
+        {/* Cart Controls */}
+        <div className="flex items-center gap-3">
+          {quantity === 0 ? (
+            <button
+              className="flex-1 bg-[#EB8A14] text-white py-3 rounded-xl font-bold hover:bg-[#d89c52]"
+              onClick={() => {
+                addToCart(cartKey, selectedWeight);
+                setShowWeightPopup(false);
               }}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              {product.weights.map((w, index) => (
-                <option key={index} value={w.weight}>
-                  {w.weight}
-                </option>
-              ))}
-            </select>
+              Add to Cart
+            </button>
+          ) : (
+            <div className="flex-1 flex items-center justify-between bg-[#bfd9bd]/30 border-2 border-[#EB8A14] rounded-xl">
+              <button
+                onClick={() => removeFromCart(cartKey)}
+                className="px-5 py-3 text-xl font-bold text-[#0a6134]"
+              >
+                -
+              </button>
+
+              <span className="font-bold">{quantity}</span>
+
+              <button
+                onClick={() => addToCart(cartKey, selectedWeight)}
+                className="px-5 py-3 text-xl font-bold text-[#0a6134]"
+              >
+                +
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  // -------------------------
+  // MAIN CARD UI
+  // -------------------------
+  return (
+    <>
+      <div
+        onClick={() =>
+          navigate(`/${product.category.toLowerCase()}/${product.slug}`)
+        }
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="group relative bg-[#bfd9bde0] rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-pointer overflow-hidden h-full min-h-[340px] flex flex-col border border-[#EB8A14]"
+        style={{
+          transform: isHovered
+            ? "perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-8px)"
+            : "none",
+        }}
+      >
+        {/* Hover shimmer */}
+        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
+        {/* Discount badge */}
+        {baseDiscount > 0 && (
+          <div className="absolute top-3 right-3 z-20 bg-[#F2B469] text-[#0a6134] text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-[#785427]/20">
+            {baseDiscount}% OFF
           </div>
         )}
 
-        {/* Price + Cart */}
-        <div className="flex items-end justify-between mt-3 pt-2">
-          {/* Price */}
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-baseline gap-2">
-              <p className="text-base sm:text-lg md:text-xl font-semibold text-green-700">
-                {currency}
-                {currentOfferPrice}
-              </p>
-              {discount > 0 && (
-                <span className="text-gray-400 text-xs sm:text-sm line-through">
-                  {currency}
-                  {currentPrice}
-                </span>
-              )}
-            </div>
-            {discount > 0 && (
-              <span className="text-xs text-green-600 font-medium">
-                Save {discount}%
-              </span>
-            )}
+        {/* Image */}
+        <div className="relative w-full aspect-square mb-4 overflow-hidden rounded-xl bg-white/90 border border-[#EB8A14]">
+          <img
+            src={product.image[0]}
+            alt={product.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          />
+
+          {/* Desktop hover button */}
+          <div className="hidden sm:flex absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition items-end justify-center pb-4">
+            <button
+              onClick={handleAddClick}
+              className="bg-[#EB8A14] text-white px-6 py-2.5 rounded-full font-semibold shadow-xl border-2 border-[#F2B469]/50"
+            >
+              Quick Add
+            </button>
           </div>
 
-          {/* Add to Cart */}
-          <div onClick={(e) => e.stopPropagation()} className="text-green-700">
-            {quantity === 0 ? (
-              <button
-                className="flex items-center justify-center gap-1 bg-green-50 border border-green-300
-                           w-16 md:w-20 h-8 md:h-9 rounded hover:bg-green-100 transition-colors text-xs md:text-sm font-medium"
-                onClick={() => addToCart(cartKey, selectedWeight)}
-                aria-label="Add to cart"
-              >
-                <img src={assets.cart_icon} alt="" className="w-4 h-4" />
-                Add
-              </button>
-            ) : (
-              <div className="flex items-center justify-center gap-1 md:gap-2 w-16 md:w-20 h-8 md:h-9 bg-green-100 border border-green-300 rounded select-none">
-                <button
-                  onClick={() => removeFromCart(cartKey)}
-                  className="cursor-pointer text-lg font-medium px-2 h-full hover:bg-green-200 rounded-l transition"
-                  aria-label="Decrease quantity"
-                >
-                  -
-                </button>
-                <span className="w-4 md:w-5 text-center text-sm font-medium">
-                  {quantity}
-                </span>
-                <button
-                  onClick={() => addToCart(cartKey, selectedWeight)}
-                  className="cursor-pointer text-lg font-medium px-2 h-full hover:bg-green-200 rounded-r transition"
-                  aria-label="Increase quantity"
-                >
-                  +
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Mobile Add */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddClick(e);
+            }}
+            className="sm:hidden absolute bottom-2 right-2 bg-[#0a6134] text-white text-xs px-3 py-1.5 rounded-lg"
+          >
+            Add
+          </button>
+        </div>
+
+        {/* Product Info */}
+        <p className="text-[#785427] text-xs uppercase tracking-wide">
+          {categoryData?.name || product.category}
+        </p>
+
+        <h3
+          className="text-[#0a6134] font-bold text-base line-clamp-2"
+          title={product.name}
+        >
+          {product.name}
+        </h3>
+
+        {/* Prices */}
+        <div className="mt-3">
+          {/* ✔ CLEAN “starting from” text */}
+          {product.weights?.length > 1 && (
+            <p className="text-xs text-gray-600 mt-0.5">
+              Starting from{" "}
+              
+            </p>
+          )}
+          <p className="text-xl font-bold text-[#96580D]">
+            {currency}
+            {baseOfferPrice}
+          </p>
+
+          
         </div>
       </div>
-    </div>
+
+      {/* Popup portal */}
+      {showWeightPopup && createPortal(<WeightPopup />, document.body)}
+    </>
   );
 };
 

@@ -1,9 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAppContext } from "../context/AppContext";
 import { useParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
-import { ChevronRight, ShoppingCart, Truck, Shield, ZoomIn } from "lucide-react";
-import { categories } from "../assets/assets";
+import { ChevronRight, ShoppingCart, Truck, Shield, ZoomIn, CheckCircle2, ChevronLeft, ChevronRight as RightArrow } from "lucide-react";
+import SEO from "../components/SEO";
+import { ArrowLeft } from "lucide-react";
+
+// ✅ Fisher-Yates shuffle algorithm for randomizing array
+const shuffleArray = (array) => {
+  const shuffled = [...array]; // Create a copy to avoid mutating original
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
 const ProductDetails = () => {
   const {
@@ -14,35 +25,103 @@ const ProductDetails = () => {
     cartItems,
     updateCartItem,
   } = useAppContext();
-  const { id } = useParams();
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [recentlyViewedProducts, setRecentlyViewedProducts] = useState([]);
   const [thumbnail, setThumbnail] = useState(0);
   const [showZoom, setShowZoom] = useState(false);
   const [selectedWeight, setSelectedWeight] = useState(null);
-  const [addedMessage, setAddedMessage] = useState(false);
+  const [toastMessage, setToastMessage] = useState({ show: false, type: '', text: '' });
+  const [categoryData, setCategoryData] = useState(null);
+  
+  
+  const { slug } = useParams();
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
-  // ✅ Load product and related products
+  // Add product to recently viewed
+  const addToRecentlyViewed = (productData) => {
+    if (!productData) return;
+
+    // Get existing recently viewed from localStorage
+    let recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+    
+    // Remove the current product if it already exists (to avoid duplicates)
+    recentlyViewed = recentlyViewed.filter(id => id !== productData._id);
+    
+    // Add current product to the beginning
+    recentlyViewed.unshift(productData._id);
+    
+    // Keep only last 10 products
+    recentlyViewed = recentlyViewed.slice(0, 10);
+    
+    // Save back to localStorage
+    localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
+  };
+
+  // Get recently viewed products
+  const getRecentlyViewed = (currentProductId) => {
+    const recentlyViewedIds = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+    
+    // Filter out current product and get product objects
+    const recentProducts = recentlyViewedIds
+      .filter(id => id !== currentProductId)
+      .map(id => products.find(p => p._id === id))
+      .filter(p => p && p.inStock) // Only show in-stock products
+      .slice(0, 5); // Show only 5 most recent products
+    
+    setRecentlyViewedProducts(recentProducts);
+  };
+
   useEffect(() => {
-    const found = products.find((item) => item._id === id);
+    const found = products.find((item) => item.slug === slug);
+
     if (found) {
       setProduct(found);
       if (found.weights?.length > 0) setSelectedWeight(found.weights[0]);
 
-      const related = products
-        .filter(
-          (item) => item.category === found.category && item._id !== found._id
-        )
-        .slice(0, 4);
-      setRelatedProducts(related);
+      // ✅ GET ALL RELATED PRODUCTS, SHUFFLE, THEN TAKE 4
+      const relatedInCategory = products.filter(
+        (item) => item.category === found.category && item.slug !== found.slug && item.inStock
+      );
+      
+      // Randomize and take 4
+      const randomRelated = shuffleArray(relatedInCategory).slice(0, 4);
+      setRelatedProducts(randomRelated);
+
+      fetchCategoryData(found.category);
+      
+      // Add to recently viewed
+      addToRecentlyViewed(found);
+      
+      // Get recently viewed products
+      getRecentlyViewed(found._id);
     }
-  }, [id, products]);
+  }, [slug, products]);
+
+  const fetchCategoryData = async (categoryName) => {
+    try {
+      const response = await fetch(`${backendUrl}api/category/list`);
+      const data = await response.json();
+      if (data.success) {
+        const foundCategory = data.categories.find(
+          (cat) => cat.name.toLowerCase() === categoryName.toLowerCase()
+        );
+        setCategoryData(foundCategory);
+      }
+    } catch (error) {
+      console.error('Error fetching category:', error);
+    }
+  };
+
+  const showToast = (type, text) => {
+    setToastMessage({ show: true, type, text });
+    setTimeout(() => setToastMessage({ show: false, type: '', text: '' }), 3000);
+  };
 
   if (!product)
-    return <p className="text-center py-10 text-gray-600">Loading...</p>;
+    return <p className="text-center py-10 text-[#785427]">Loading...</p>;
 
-  // ✅ Compute prices safely
   const currentPrice = selectedWeight ? selectedWeight.price : product.price;
   const currentOfferPrice = selectedWeight
     ? selectedWeight.offerPrice
@@ -52,274 +131,453 @@ const ProductDetails = () => {
       ? Math.round(((currentPrice - currentOfferPrice) / currentPrice) * 100)
       : 0;
 
-  // ✅ Cart logic
   const cartKey = `${product._id}_${selectedWeight?.weight || "default"}`;
   const isInCart = cartItems && cartItems[cartKey] > 0;
 
-  // ✅ Add to cart handler with debugging + meta storage
-const handleAddToCart = async () => {
-  try {
-    //console.log("🛒 Adding to cart:", product.name, selectedWeight);
+  const handleAddToCart = async () => {
+    try {
+      const key = `${product._id}_${selectedWeight?.weight || "default"}`;
 
-    // Create unique key (product + weight)
-    const key = `${product._id}_${selectedWeight?.weight || "default"}`;
+      const cartMeta = JSON.parse(localStorage.getItem("cartMeta") || "{}");
+      cartMeta[key] = {
+        price: selectedWeight?.price || product.price,
+        offerPrice: selectedWeight?.offerPrice || product.offerPrice,
+      };
+      localStorage.setItem("cartMeta", JSON.stringify(cartMeta));
 
-    // Prepare meta info for cart (price, offer price, etc.)
-    const cartMeta = JSON.parse(localStorage.getItem("cartMeta") || "{}");
-    cartMeta[key] = {
-      price: selectedWeight?.price || product.price,
-      offerPrice: selectedWeight?.offerPrice || product.offerPrice,
-    };
-    localStorage.setItem("cartMeta", JSON.stringify(cartMeta));
+      addToCart(product._id, selectedWeight);
+      updateCartItem(key, (cartItems[key] || 0) + 1);
 
-    // Update context cart items
-    addToCart(product._id, selectedWeight);
-    updateCartItem(key, (cartItems[key] || 0) + 1);
-
-
-    setAddedMessage(true);
-    setTimeout(() => setAddedMessage(false), 2000);
-  } catch (err) {
-    console.error("❌ Add to cart failed:", err);
-  }
-};
-
-
-  const handleUpdateCart = (newQuantity) => {
-    if (newQuantity <= 0) updateCartItem(cartKey, 0);
-    else updateCartItem(cartKey, newQuantity);
+      showToast('add', '🎉 Added to cart!');
+    } catch (err) {
+      console.error("❌ Add to cart failed:", err);
+    }
   };
 
+  const handleUpdateCart = (newQuantity) => {
+    if (newQuantity <= 0) {
+      updateCartItem(cartKey, 0);
+      showToast('remove', '🗑️ Removed from cart');
+    } else {
+      updateCartItem(cartKey, newQuantity);
+      showToast('update', '✨ Cart updated!');
+    }
+  };
+
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.image,
+    "description": Array.isArray(product.description)
+      ? product.description.join(" ")
+      : product.description,
+    "sku": product._id,
+    "brand": {
+      "@type": "Brand",
+      "name": "NuTreats"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": `http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`,
+      "priceCurrency": "PKR",
+      "price": currentOfferPrice,
+      "availability": product.inStock 
+        ? "https://schema.org/InStock" 
+        : "https://schema.org/OutOfStock",
+      "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      "seller": {
+        "@type": "Organization",
+        "name": "NuTreats"
+      }
+    },
+    "category": product.category
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "http://localhost:5173"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": categoryData?.name || product.category,
+        "item": `http://localhost:5173/${product.category.toLowerCase()}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": product.name,
+        "item": `http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`
+      }
+    ]
+  };
+
+  const combinedSchema = {
+    "@context": "https://schema.org",
+    "@graph": [productSchema, breadcrumbSchema]
+  };
+
+  const metaDescription = Array.isArray(product.description)
+    ? product.description.join(" ").substring(0, 155)
+    : product.description.substring(0, 155);
+
   return (
-    <div className="bg-[#e6dbcee0] min-h-screen px-4 sm:px-6 py-10">
-      {/* Breadcrumb */}
-      <div className="flex items-center text-gray-600 text-sm mb-6 max-w-6xl mx-auto flex-wrap gap-1">
-        <span
-          className="cursor-pointer hover:text-green-700"
-          onClick={() => navigate("/")}
-        >
-          Home
-        </span>
-        <ChevronRight size={16} />
-        <span
-          className="cursor-pointer hover:text-green-700"
-          onClick={() => navigate(`/category/${product.category}`)}
-        >
-          {product.category}
-        </span>
-        <ChevronRight size={16} />
-        <span className="text-green-700 font-semibold">{product.name}</span>
-      </div>
+    <>
+      <SEO
+        title={`${product.name} - Buy Online | NuTreats Pakistan`}
+        description={`${metaDescription}... Shop now with free delivery in Lahore. ${discount > 0 ? `Save ${discount}%` : 'Best price guaranteed'}.`}
+        keywords={`${product.name}, ${product.category}, buy ${product.name} online, healthy snacks pakistan, ${categoryData?.name || product.category} online`}
+        url={`http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`}
+        canonicalUrl={`http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`}
+        image={product.image[0]}
+        type="product"
+        schema={combinedSchema}
+      />
 
-      {/* Product Card */}
-      <div className="bg-white shadow-lg rounded-2xl max-w-6xl mx-auto p-6 md:p-10 flex flex-col md:flex-row gap-10">
-        {/* Left: Image Gallery */}
-        <div className="flex-1 flex flex-col items-center">
-          <div className="relative w-full max-w-sm h-80 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-            <img
-              src={product.image?.[thumbnail] ?? product.image?.[0]}
-              alt={product.name}
-              className="object-contain h-full w-full cursor-zoom-in transition-transform duration-500 hover:scale-105"
-              onClick={() => setShowZoom(true)}
-            />
-            <button
-              onClick={() => setShowZoom(true)}
-              className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow hover:scale-105 transition"
-            >
-              <ZoomIn className="text-gray-600 w-5 h-5" />
-            </button>
-          </div>
-
-          {product.image?.length > 1 && (
-            <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
-              {product.image.map((img, index) => (
-                <img
-                  key={index}
-                  src={img}
-                  alt={`${product.name}-${index}`}
-                  onClick={() => setThumbnail(index)}
-                  className={`w-20 h-20 rounded-xl border-2 object-cover cursor-pointer transition-all ${
-                    thumbnail === index
-                      ? "border-green-600 shadow-md"
-                      : "border-gray-200 hover:border-green-400"
-                  }`}
-                />
-              ))}
+      {/* Toast Notification */}
+      {toastMessage.show && (
+        <div className="fixed top-24 right-6 z-50 animate-[slideIn_0.3s_ease-out]">
+          <div className="bg-white shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-3 border-2 border-[#EB8A14] min-w-[280px]">
+            <div className="bg-[#bfd9bde0] p-2 rounded-full border border-[#EB8A14]">
+              <CheckCircle2 className="text-[#0a6134] w-6 h-6" />
             </div>
-          )}
+            <div>
+              <p className="text-[#0a6134] font-semibold text-sm">
+                {toastMessage.text}
+              </p>
+              <p className="text-[#785427] text-xs mt-0.5">
+                {toastMessage.type === 'add' && 'Item added successfully'}
+                {toastMessage.type === 'update' && 'Quantity updated'}
+                {toastMessage.type === 'remove' && 'Item removed'}
+              </p>
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* Right: Product Info */}
-        <div className="flex-1 flex flex-col justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-3">{product.name}</h1>
-            <p className="text-gray-600 leading-relaxed mb-6">
-              {Array.isArray(product.description)
-                ? product.description.join(" ")
-                : product.description}
-            </p>
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .hide-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+      `}</style>
 
-            {/* Weight Selector */}
-            {product.weights?.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-lg mb-2">Select Weight</h3>
-                <div className="flex flex-wrap gap-3">
-                  {product.weights.map((w) => (
-                    <button
-                      key={w._id}
-                      onClick={() => setSelectedWeight(w)}
-                      className={`px-4 py-2 rounded-full border font-medium transition ${
-                        selectedWeight?.weight === w.weight
-                          ? "bg-green-600 text-white border-green-600"
-                          : "border-gray-300 text-gray-700 hover:border-green-600"
+      <div className="bg-white min-h-screen px-4 sm:px-6 py-10 mt-16">
+        <button
+  onClick={() => navigate(-1)}
+  className="flex items-center gap-2 text-[#785427] hover:text-[#EB8A14] font-semibold mb-4 transition-colors"
+>
+  <ArrowLeft size={20} />
+  Back
+</button>
+        {/* Breadcrumb */}
+        <nav 
+          className="flex items-center text-[#785427] text-sm mb-6 max-w-6xl mx-auto flex-wrap gap-1"
+          aria-label="Breadcrumb"
+        >
+          <span
+            className="cursor-pointer hover:text-[#EB8A14] transition"
+            onClick={() => navigate("/")}
+          >
+            Home
+          </span>
+          <ChevronRight size={16} />
+          <span
+            className="cursor-pointer hover:text-[#EB8A14] transition"
+            onClick={() => navigate(`/${product.category.toLowerCase()}`)}
+          >
+            {categoryData?.name || product.category}
+          </span>
+          <ChevronRight size={16} />
+          <span className="text-[#EB8A14] font-semibold">{product.name}</span>
+        </nav>
+
+        {/* Product Card */}
+        <article className="bg-[#bfd9bde0] rounded-2xl p-1 shadow-xl border-4 border-[#EB8A14] max-w-6xl mx-auto">
+          <div className="bg-[#bfd9bde0] rounded-xl p-6 md:p-10 flex flex-col md:flex-row gap-10">
+            {/* Left: Image Gallery */}
+            <div className="flex-1 flex flex-col items-center">
+              <div className="relative w-full max-w-sm h-80 bg-white rounded-2xl flex items-center justify-center overflow-hidden border-2 border-[#EB8A14]">
+                <img
+                  src={product.image?.[thumbnail] ?? product.image?.[0]}
+                  alt={`${product.name} - ${categoryData?.name || product.category}`}
+                  className="object-contain h-full w-full cursor-zoom-in transition-transform duration-500 hover:scale-105"
+                  onClick={() => setShowZoom(true)}
+                />
+                <button
+                  onClick={() => setShowZoom(true)}
+                  className="absolute top-4 right-4 bg-white p-2 rounded-full shadow hover:scale-105 transition border-2 border-[#EB8A14]"
+                  aria-label="Zoom image"
+                >
+                  <ZoomIn className="text-[#EB8A14] w-5 h-5" />
+                </button>
+              </div>
+
+              {product.image?.length > 1 && (
+                <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
+                  {product.image.map((img, index) => (
+                    <img
+                      key={index}
+                      src={img}
+                      alt={`${product.name} view ${index + 1}`}
+                      onClick={() => setThumbnail(index)}
+                      className={`w-20 h-20 rounded-xl border-2 object-cover cursor-pointer transition-all ${
+                        thumbnail === index
+                          ? "border-[#EB8A14] shadow-md scale-105"
+                          : "border-[#EB8A14] hover:border-[#EB8A14]"
                       }`}
-                    >
-                      {w.weight}
-                    </button>
+                      loading="lazy"
+                    />
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Price Section */}
-            <div className="flex items-center gap-4 py-4">
-              <span className="text-5xl font-extrabold text-green-600">
-                {currency}
-                {currentOfferPrice}
-              </span>
-              {discount > 0 && (
-                <>
-                  <span className="text-2xl text-gray-400 line-through">
-                    {currency}
-                    {currentPrice}
-                  </span>
-                  <span className="text-md bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
-                    Save {discount}%
-                  </span>
-                </>
               )}
             </div>
 
-            {/* Add to Cart or Quantity Control */}
-            <div className="mt-6 flex flex-col sm:flex-row gap-3">
-              {isInCart ? (
-                <>
-                  <div className="flex items-center justify-between border rounded-xl w-full sm:w-1/2">
-                    <button
-                      onClick={() => handleUpdateCart(cartItems[cartKey] - 1)}
-                      className="px-4 py-2 text-lg font-semibold hover:text-green-600"
-                    >
-                      −
-                    </button>
-                    <span className="px-4 py-2 font-semibold text-gray-800 border-x border-gray-200">
-                      {cartItems[cartKey]}
-                    </span>
-                    <button
-                      onClick={() => handleUpdateCart(cartItems[cartKey] + 1)}
-                      className="px-4 py-2 text-lg font-semibold hover:text-green-600"
-                    >
-                      +
-                    </button>
+            {/* Right: Product Info */}
+            <div className="flex-1 flex flex-col justify-between">
+              <div>
+                <h1 className="text-3xl font-bold mb-3 text-[#0a6134]">{product.name}</h1>
+                <div
+                  className="text-[#785427] leading-relaxed mb-6 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{
+                    __html: (() => {
+                      const desc = product.description;
+                      if (typeof desc === "string") {
+                        return desc || "No description available.";
+                      }
+                      if (Array.isArray(desc)) {
+                        const cleaned = desc.filter(item => item && item.trim() !== "");
+                        return cleaned.length > 0 
+                          ? cleaned.join(" ") 
+                          : "No description available.";
+                      }
+                      return "No description available.";
+                    })(),
+                  }}
+                />
+
+                {/* Weight Selector */}
+                {product.weights?.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-lg mb-2 text-[#0a6134]">Select Weight</h3>
+                    <div className="flex flex-wrap gap-3">
+                      {product.weights.map((w) => (
+                        <button
+                          key={w._id}
+                          onClick={() => setSelectedWeight(w)}
+                          className={`px-4 py-2 rounded-full border-2 cursor-pointer font-medium text-lg transition ${
+                            selectedWeight?.weight === w.weight
+                              ? "bg-[#EB8A14] text-white border-[#EB8A14] shadow-md"
+                              : "border-[#EB8A14] text-[#0a6134] hover:border-[#EB8A14] bg-[#bfd9bde0]"
+                          }`}
+                        >
+                          {w.weight}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <button
-  onClick={() => {
-    handleAddToCart();
-    navigate("/cart");
-  }}
-  className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
->
-  Buy Now
-</button>
+                )}
 
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={handleAddToCart}
-                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition"
+                {/* Price Section */}
+                <div className="flex items-center gap-4 py-4">
+                  <span className="text-4xl font-extrabold text-[#96580D]">
+                    {currency}
+                    {currentOfferPrice}
+                  </span>
+                  {discount > 0 && (
+                    <>
+                      <span className="text-2xl text-[#785427] line-through">
+                        {currency}
+                        {currentPrice}
+                      </span>
+                      <span className="text-md bg-[#bfd9bde0] text-[#96580D] px-3 py-1 rounded-full font-semibold border-2 border-[#EB8A14]">
+                        Save {discount}%
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {/* Add to Cart or Quantity Control */}
+                <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                  {isInCart ? (
+                    <>
+                      <div className="flex items-center justify-between border-2 border-[#EB8A14] rounded-xl w-full sm:w-1/2 bg-[#bfd9bde0]">
+                        <button
+                          onClick={() => handleUpdateCart(cartItems[cartKey] - 1)}
+                          className="px-4 py-2 text-lg font-semibold text-[#EB8A14] hover:text-[#EB8A14]"
+                          aria-label="Decrease quantity"
+                        >
+                          −
+                        </button>
+                        <span className="px-4 py-2 font-semibold text-[#0a6134] border-x-2 border-[#EB8A14]">
+                          {cartItems[cartKey]}
+                        </span>
+                        <button
+                          onClick={() => handleUpdateCart(cartItems[cartKey] + 1)}
+                          className="px-4 py-2 text-lg font-semibold text-[#EB8A14] hover:text-[#EB8A14]"
+                          aria-label="Increase quantity"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigate("/cart");
+                        }}
+                        className="bg-[#EB8A14] hover:bg-[#EB8A14] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-[#EB8A14]"
+                      >
+                        Buy Now
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleAddToCart}
+                        className="flex items-center justify-center gap-2 bg-[#EB8A14] hover:bg-[#EB8A14] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-[#EB8A14]"
+                      >
+                        <ShoppingCart size={20} />
+                        Add to Cart
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleAddToCart();
+                          navigate("/cart");
+                        }}
+                        className="bg-[#EB8A14] hover:bg-[#EB8A14] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-[#EB8A14]"
+                      >
+                        Buy Now
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Guarantee Icons */}
+              <div className="mt-10 grid grid-cols-3 gap-6 text-[#785427]">
+                <div className="flex flex-col items-center">
+                  <div className="bg-[#bfd9bde0] p-3 rounded-full border-2 border-[#EB8A14] mb-2">
+                    <Truck size={28} className="text-[#EB8A14]" />
+                  </div>
+                  <span className="text-sm font-medium text-center">Fast Delivery</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="bg-[#bfd9bde0] p-3 rounded-full border-2 border-[#EB8A14] mb-2">
+                    <Shield size={28} className="text-[#EB8A14]" />
+                  </div>
+                  <span className="text-sm font-medium text-center">Secure Packaging</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="bg-[#bfd9bde0] p-3 rounded-full border-2 border-[#EB8A14] mb-2">
+                    <ShoppingCart size={28} className="text-[#EB8A14]" />
+                  </div>
+                  <span className="text-sm font-medium text-center">Trusted Quality</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        {/* Related Products - LARGER CARDS */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-16 max-w-6xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-serif tracking-tight mb-6 text-[#0a6134] text-center">
+              You May Also Like
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {relatedProducts.map((related) => (
+                <div 
+                  key={related._id} 
+                  className="transform transition-all duration-300 hover:scale-105"
+                  style={{ minHeight: '320px' }}
+                >
+                  <ProductCard 
+                    product={related} 
+                    className="h-full"
+                    imageClassName="h-48 md:h-56 object-contain"
+                    contentClassName="p-4"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Recently Viewed Products - NO SCROLL */}
+        {recentlyViewedProducts.length > 0 && (
+          <section className="mt-16 max-w-6xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-serif tracking-tight text-[#0a6134] text-center mb-6">
+              Recently Viewed
+            </h2>
+            
+            <div className="py-6">
+              <div className="flex gap-4 justify-center flex-wrap">
+                {recentlyViewedProducts.map((viewed) => (
+                  <div 
+                    key={viewed._id} 
+                    className="w-53 transform transition-all duration-300 hover:scale-105"
                   >
-                    <ShoppingCart size={20} />
-                    Add to Cart
-                  </button>
-                  <button
-  onClick={() => {
-    //console.log("⚡ Buy Now clicked:", product.name);
-    handleAddToCart();
-    navigate("/cart");
-  }}
-  className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-semibold transition"
->
-  Buy Now
-</button>
-
-                </>
-              )}
+                    <ProductCard product={viewed} />
+                  </div>
+                ))}
+              </div>
             </div>
+          </section>
+        )}
 
-            {addedMessage && (
-              <p className="text-green-700 text-sm font-medium bg-green-50 border border-green-200 rounded-lg py-2 mt-3 text-center">
-                ✓ Added to cart successfully!
-              </p>
-            )}
-          </div>
-
-          {/* Guarantee Icons */}
-          <div className="mt-10 grid grid-cols-3 gap-6 text-gray-600">
-            <div className="flex flex-col items-center">
-              <Truck size={28} className="text-green-600 mb-1" />
-              <span className="text-sm font-medium">Fast Delivery</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Shield size={28} className="text-green-600 mb-1" />
-              <span className="text-sm font-medium">Secure Packaging</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <ShoppingCart size={28} className="text-green-600 mb-1" />
-              <span className="text-sm font-medium">Trusted Quality</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Related Products */}
-      {relatedProducts.length > 0 && (
-        <div className="mt-16 max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Related Products
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {relatedProducts.map((related) => (
-              <ProductCard key={related._id} product={related} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Zoom Modal */}
-      {showZoom && (
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-          onClick={() => setShowZoom(false)}
-        >
+        {/* Zoom Modal */}
+        {showZoom && (
           <div
-            className="relative"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+            onClick={() => setShowZoom(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Image zoom"
           >
-            <img
-              src={product.image?.[thumbnail] ?? product.image?.[0]}
-              alt="Zoomed"
-              className="max-w-[90vw] max-h-[80vh] rounded-lg object-contain"
-            />
-            <button
-              onClick={() => setShowZoom(false)}
-              className="absolute top-3 right-3 bg-white/80 p-2 rounded-full"
+            <div
+              className="relative"
+              onClick={(e) => e.stopPropagation()}
             >
-              ✕
-            </button>
+              <img
+                src={product.image?.[thumbnail] ?? product.image?.[0]}
+                alt={`${product.name} - zoomed view`}
+                className="max-w-[90vw] max-h-[80vh] rounded-lg object-contain"
+              />
+              <button
+                onClick={() => setShowZoom(false)}
+                className="absolute top-3 right-3 bg-[#bfd9bde0] p-2 rounded-full hover:bg-[#bfd9bde0] transition text-[#EB8A14] hover:text-[#EB8A14] border-2 border-[#EB8A14]"
+                aria-label="Close zoom"
+              >
+                ✕
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };
 
