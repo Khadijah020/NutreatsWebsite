@@ -1,26 +1,135 @@
 import { v2 as cloudinary } from "cloudinary"
 import Product from "../models/Product.js"
+import { slugify, generateUniqueSlug } from "../utils/slugify.js"
 
-//Add Product: /api/product/add
-export const addProduct = async (req , res)=>{
-    try {
-        let productData = JSON.parse(req.body.productData)
-        const images = req.files
+// Add Product
+// ✅ FIX 1: addProduct - Keep description as string
+export const addProduct = async (req, res) => {
+  try {
+    const productData = JSON.parse(req.body.productData);
+    const { name, description, category, price, offerPrice, weights, isFeatured } = productData;
 
-        let imagesUrl = await Promise.all(
-            images.map(async (item)=>{
-                let result = await cloudinary.uploader.upload(item.path, {resource_type: 'image'});
-                return result.secure_url
-            })
-        )
-        await Product.create({...productData, image: imagesUrl})
-        return res.json({success: true, message: 'Product Added Successfully!'})
-    } catch (error) {
-        console.log(error.message)
-        res.json({success: false, message: error.message})
-        
+    console.log('➕ Adding product:', name);
+    console.log('📝 Description received:', description);
+    console.log('📝 Description type:', typeof description);
+
+    if (!name || name.trim() === '') {
+      return res.json({ success: false, message: "Product name is required" });
     }
-}
+
+    const baseSlug = slugify(name);
+    const slug = await generateUniqueSlug(baseSlug, Product);
+
+    const images = req.files;
+    let imagesUrl = [];
+
+    if (images && images.length > 0) {
+      imagesUrl = await Promise.all(
+        images.map(async (item) => {
+          let result = await cloudinary.uploader.upload(item.path, {
+            resource_type: 'image',
+            folder: 'products'
+          });
+          return result.secure_url;
+        })
+      );
+    }
+
+    // ✅ IMPORTANT: Keep description as string, don't convert to array
+    const product = new Product({
+      name,
+      slug,
+      description: description || '', // ← Keep as string!
+      category,
+      price: weights && weights.length > 0 ? null : Number(price),
+      offerPrice: weights && weights.length > 0 ? null : Number(offerPrice),
+      image: imagesUrl,
+      weights: weights || [],
+      inStock: true,
+      isFeatured: isFeatured || false, // ✅ ADD THIS
+      date: Date.now()
+    });
+
+    await product.save();
+    
+    console.log('✅ Product saved with description type:', typeof product.description);
+    
+    res.json({ 
+      success: true, 
+      message: "Product added successfully", 
+      product 
+    });
+  } catch (error) {
+    console.error('❌ Error adding product:', error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Update Product
+// Update Product - FIXED VERSION
+export const updateProduct = async (req, res) => {
+  try {
+    const { 
+      id, 
+      name, 
+      description, 
+      category, 
+      price, 
+      offerPrice, 
+      image, 
+      weights, 
+      inStock,
+      isFeatured // ✅ ADD THIS - Accept isFeatured from request
+    } = req.body;
+    
+    console.log('🔄 Updating product:', id);
+    console.log('📝 Description received:', description);
+    console.log('📝 Description type:', typeof description);
+    console.log('⭐ isFeatured received:', isFeatured); // ✅ DEBUG LOG
+    
+    const updateData = {
+      category,
+      price: Number(price) || 0,
+      offerPrice: Number(offerPrice) || 0,
+      image: image || [],
+      weights: weights || [],
+      inStock: inStock !== undefined ? inStock : true,
+      isFeatured: isFeatured !== undefined ? isFeatured : false // ✅ ADD THIS LINE
+    };
+
+    // ✅ Keep description as string - don't convert to array!
+    if (description !== undefined) {
+      updateData.description = description || '';
+    }
+    
+    // If name changed, regenerate slug
+    if (name) {
+      const product = await Product.findById(id);
+      if (product && product.name !== name) {
+        const baseSlug = slugify(name);
+        updateData.slug = await generateUniqueSlug(baseSlug, Product, id);
+        updateData.name = name;
+        console.log('🔗 Updated slug:', updateData.slug);
+      }
+    }
+
+    const updated = await Product.findByIdAndUpdate(id, updateData, { new: true });
+    
+    if (!updated) {
+      return res.json({ success: false, message: 'Product not found' });
+    }
+    
+    console.log('✅ Product updated');
+    console.log('   - Description type:', typeof updated.description);
+    console.log('   - isFeatured:', updated.isFeatured); // ✅ VERIFY IT SAVED
+    
+    res.json({ success: true, message: "Product updated successfully", product: updated });
+  } catch (error) {
+    console.error('❌ Update error:', error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 
 //List Products: /api/product/list
 export const productList = async (req , res) => {
@@ -58,78 +167,78 @@ export const productById = async (req , res)=>{
     }
 }
 
-//Update Product: /api/product/update
-//Update Product: /api/product/update
-export const updateProduct = async (req, res) => {
-    try {
-        const { id, name, description, price, offerPrice, image, category, inStock, weights } = req.body;
+// //Update Product: /api/product/update
+// //Update Product: /api/product/update
+// export const updateProduct = async (req, res) => {
+//     try {
+//         const { id, name, description, price, offerPrice, image, category, inStock, weights } = req.body;
 
-        // Validate required fields
-        if (!id) {
-            return res.json({ success: false, message: 'Product ID is required' });
-        }
+//         // Validate required fields
+//         if (!id) {
+//             return res.json({ success: false, message: 'Product ID is required' });
+//         }
 
-        if (!name || !category) {
-            return res.json({ success: false, message: 'Name and category are required' });
-        }
+//         if (!name || !category) {
+//             return res.json({ success: false, message: 'Name and category are required' });
+//         }
 
-        // Check if either base prices or weight variants exist
-        const hasBasePrice = price && offerPrice && price !== '0' && offerPrice !== '0';
-        const hasWeights = weights && Array.isArray(weights) && weights.length > 0;
+//         // Check if either base prices or weight variants exist
+//         const hasBasePrice = price && offerPrice && price !== '0' && offerPrice !== '0';
+//         const hasWeights = weights && Array.isArray(weights) && weights.length > 0;
 
-        if (!hasBasePrice && !hasWeights) {
-            return res.json({ success: false, message: 'Either base prices or weight variants are required' });
-        }
+//         if (!hasBasePrice && !hasWeights) {
+//             return res.json({ success: false, message: 'Either base prices or weight variants are required' });
+//         }
 
-        // Validate description only if provided
-        if (description !== undefined && (!Array.isArray(description))) {
-            return res.json({ success: false, message: 'Description must be an array' });
-        }
+//         // Validate description only if provided
+//         if (description !== undefined && (!Array.isArray(description))) {
+//             return res.json({ success: false, message: 'Description must be an array' });
+//         }
 
-        if (!Array.isArray(image) || image.length === 0) {
-            return res.json({ success: false, message: 'At least one image is required' });
-        }
+//         if (!Array.isArray(image) || image.length === 0) {
+//             return res.json({ success: false, message: 'At least one image is required' });
+//         }
 
-        // Prepare update object
-        const updateData = {
-            name,
-            price: Number(price) || 0,
-            offerPrice: Number(offerPrice) || 0,
-            image,
-            category,
-            inStock: inStock !== undefined ? inStock : true,
-            weights: weights || []
-        };
+//         // Prepare update object
+//         const updateData = {
+//             name,
+//             price: Number(price) || 0,
+//             offerPrice: Number(offerPrice) || 0,
+//             image,
+//             category,
+//             inStock: inStock !== undefined ? inStock : true,
+//             weights: weights || []
+//         };
 
-        // Only include description if it exists and has content
-        if (description && Array.isArray(description) && description.length > 0) {
-            updateData.description = description;
-        } else {
-            updateData.description = [];
-        }
+//         // Only include description if it exists and has content
+//         if (description && Array.isArray(description) && description.length > 0) {
+//             updateData.description = description;
+//         } else {
+//             updateData.description = [];
+//         }
 
-        // Update the product
-        const updated = await Product.findByIdAndUpdate(
-            id,
-            updateData,
-            { new: true, runValidators: true }
-        );
+//         // Update the product
+//         const updated = await Product.findByIdAndUpdate(
+//             id,
+//             updateData,
+//             { new: true, runValidators: true }
+//         );
 
-        if (!updated) {
-            return res.json({ success: false, message: 'Product not found' });
-        }
+//         if (!updated) {
+//             return res.json({ success: false, message: 'Product not found' });
+//         }
 
-        res.json({ 
-            success: true, 
-            message: 'Product updated successfully', 
-            product: updated 
-        });
+//         res.json({ 
+//             success: true, 
+//             message: 'Product updated successfully', 
+//             product: updated 
+//         });
 
-    } catch (error) {
-        console.log(error.message);
-        res.json({ success: false, message: error.message });
-    }
-}
+//     } catch (error) {
+//         console.log(error.message);
+//         res.json({ success: false, message: error.message });
+//     }
+// }
 
 //Remove Product: /api/product/remove
 export const removeProduct = async (req, res) => {

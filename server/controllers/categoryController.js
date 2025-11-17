@@ -2,15 +2,17 @@ import Category from '../models/Category.js'
 import { v2 as cloudinary } from 'cloudinary'
 
 // Get All Categories: /api/category/list
+// Get All Categories: /api/category/list
 export const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find({}).sort({ createdAt: -1 })
-    return res.json({ success: true, categories })
+    const categories = await Category.find({}).sort({ order: 1 }); // 👈 sort by order ascending
+    return res.json({ success: true, categories });
   } catch (error) {
-    console.log(error.message)
-    res.json({ success: false, message: error.message })
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
   }
-}
+};
+
 
 // Get Single Category: /api/category/:id
 export const getCategory = async (req, res) => {
@@ -53,12 +55,14 @@ export const addCategory = async (req, res) => {
       })
       imageUrl = imageUpload.secure_url
     }
+    const count = await Category.countDocuments();
 
     const category = new Category({
       name,
       description: description || '',
       image: imageUrl,
-      isActive: isActive === 'false' ? false : true
+      isActive: isActive === 'false' ? false : true,
+      order: count, 
     })
 
     await category.save()
@@ -68,6 +72,28 @@ export const addCategory = async (req, res) => {
     res.json({ success: false, message: error.message })
   }
 }
+
+// Reorder Categories: /api/category/reorder
+export const reorderCategories = async (req, res) => {
+  try {
+    const { order } = req.body; // array of { _id, order }
+
+    if (!Array.isArray(order)) {
+      return res.status(400).json({ success: false, message: 'Invalid order data' });
+    }
+
+    const updatePromises = order.map(item =>
+      Category.findByIdAndUpdate(item._id, { order: item.order })
+    );
+    await Promise.all(updatePromises);
+
+    res.json({ success: true, message: 'Categories reordered successfully' });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 // Update Category: /api/category/update/:id
 export const updateCategory = async (req, res) => {

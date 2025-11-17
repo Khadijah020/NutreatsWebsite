@@ -2,12 +2,19 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  description: { type: Array},
+  slug: {                    // ← ADD THIS ENTIRE FIELD!
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
+  description: { type: String, default: ''},
   price: { type: Number },
   offerPrice: { type: Number },
   image: { type: Array, required: true },
   category: { type: String, required: true },
   inStock: { type: Boolean, default: true },
+  isFeatured: { type: Boolean, default: false },
   weights: [
     {
       weight: { type: String, required: true },
@@ -16,15 +23,6 @@ const productSchema = new mongoose.Schema({
     },
   ],
 }, { timestamps: true });
-
-productSchema.pre('validate', function (next) {
-  if ((!this.price || !this.offerPrice) && (!this.weights || this.weights.length === 0)) {
-    next(new Error('Either base price/offerPrice or at least one weight variant is required.'));
-  } else {
-    next();
-  }
-});
-
 
 const Product = mongoose.models.product || mongoose.model('product', productSchema)
 

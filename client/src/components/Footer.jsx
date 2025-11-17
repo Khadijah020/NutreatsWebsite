@@ -7,7 +7,8 @@ const Footer = () => {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer id="contact-section" className="px-6 md:px-16 lg:px-24 xl:px-32 mt-24 bg-[#e6dbcee0]">
+        
+        <footer id="contact-section" className="px-6 md:px-16 lg:px-24 xl:px-32 mt-24 bg-[#f3efe9]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 py-8 border-b border-gray-300">
                 
                 {/* Company Info Section */}
@@ -20,15 +21,15 @@ const Footer = () => {
                     {/* Contact Info */}
                     <div className="space-y-1 text-sm text-gray-600 mb-3">
                         <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-green-700" />
-                            <a href="tel:+923001234567" className="hover:text-green-700 transition">
-                                +92 300 1234-567
+                            <Phone className="w-4 h-4 text-[#EB8A14]" />
+                            <a href="tel:+923001234567" className="hover:text-[#EB8A14] transition">
+                                +92 327 4571600
                             </a>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-green-700" />
-                            <a href="mailto:info@nutreats.com" className="hover:text-green-700 transition">
-                                info@nutreats.com
+                            <Mail className="w-4 h-4 text-[#EB8A14]" />
+                            <a href="mailto:info@nutreats.com" className="hover:text-[#EB8A14] transition">
+                                nutreatsofficial@gmail.com
                             </a>
                         </div>
                     </div>
@@ -36,9 +37,8 @@ const Footer = () => {
                     {/* Social Media */}
                     <div className="flex gap-3 mt-1">
                         {[ 
-                            { Icon: Facebook, url: "https://facebook.com", label: "Facebook" },
-                            { Icon: Instagram, url: "https://instagram.com", label: "Instagram" },
-                            { Icon: Twitter, url: "https://twitter.com", label: "Twitter" }
+                            { Icon: Facebook, url: "https://facebook.com/NuTreatsHome/", label: "Facebook" },
+                            { Icon: Instagram, url: "https://instagram.com/nutreatsofficial/", label: "Instagram" },
                         ].map(({ Icon, url, label }) => (
                             <a
                                 key={label}
@@ -46,7 +46,7 @@ const Footer = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label={label}
-                                className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center hover:bg-green-700 hover:text-white hover:border-green-700 transition-all"
+                                className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center hover:bg-[#EB8A14] hover:text-white hover:border-[#EB8A14] transition-all"
                             >
                                 <Icon className="w-4 h-4" />
                             </a>
@@ -65,7 +65,7 @@ const Footer = () => {
                                 <li key={i}>
                                     <a 
                                         href={link.url} 
-                                        className="text-gray-600 hover:text-green-700 hover:underline transition"
+                                        className="text-gray-600 hover:text-[#EB8A14] hover:underline transition"
                                     >
                                         {link.text}
                                     </a>
@@ -80,9 +80,9 @@ const Footer = () => {
             <div className="py-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-600">
                 <p>© {currentYear} Nutreats. All rights reserved.</p>
                 <div className="flex gap-4 text-xs sm:text-sm">
-                    <a href="/privacy" className="hover:text-green-700 transition">Privacy Policy</a>
+                    <a href="/privacy" className="hover:text-[#EB8A14] transition">Privacy Policy</a>
                     <span className="text-gray-400">|</span>
-                    <a href="/terms" className="hover:text-green-700 transition">Terms</a>
+                    <a href="/terms" className="hover:text-[#EB8A14] transition">Terms</a>
                 </div>
             </div>
         </footer>

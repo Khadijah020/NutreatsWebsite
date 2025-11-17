@@ -87,14 +87,13 @@ if (Object.keys(guestMeta).length > 0) {
       newCart[cartKey] = 1;
     }
     
-    // Store weight info separately for cart display
+    // Store ONLY weight info, NOT prices - prices will be fetched fresh each time
     if (weightData) {
       const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
       cartMeta[cartKey] = {
         productId: itemId,
         weight: weightData.weight,
-        price: weightData.price,
-        offerPrice: weightData.offerPrice
+        // Remove price and offerPrice - we'll fetch these fresh from products
       };
       localStorage.setItem('cartMeta', JSON.stringify(cartMeta));
     }
@@ -104,7 +103,6 @@ if (Object.keys(guestMeta).length > 0) {
   
   toast.success('Added to cart');
 };
-
 
   //update cart
   const updateCartItem = (itemId, quantity) => {
@@ -116,21 +114,19 @@ if (Object.keys(guestMeta).length > 0) {
 };
 
 //remove item from cart
-const removeFromCart = (cartKey) => {
-  setCartItems((prev) => {
-    const newCart = { ...prev };
-    if (newCart[cartKey] > 1) {
-      newCart[cartKey] -= 1;
-    } else {
-      delete newCart[cartKey];
-      
-      // Clean up meta data
-      const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
-      delete cartMeta[cartKey];
-      localStorage.setItem('cartMeta', JSON.stringify(cartMeta));
-    }
-    return newCart;
-  });
+const removeFromCart = async (productId) => {
+  try {
+    setCartItems((prev) => {
+      const newCart = { ...prev };
+      delete newCart[productId];   // ❗ Delete entire product entry
+      return newCart;
+    });
+
+    await axios.post("/api/cart/remove", { productId });
+    toast.success("Removed from cart");
+  } catch (error) {
+    console.error("Error removing item:", error);
+  }
 };
 
 
@@ -158,20 +154,33 @@ const removeFromCart = (cartKey) => {
   };
 
   //get cart total amount
+// Replace getCartAmount in AppContext.jsx
+
 const getCartAmount = () => {
   let totalAmount = 0;
-  const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
 
   for (const cartKey in cartItems) {
-    const [productId] = cartKey.split('_');
-    const product = products.find((p) => p._id === productId);
     const quantity = cartItems[cartKey];
-
-    if (product && quantity > 0) {
-      // If this item has variant meta info, use offerPrice from there
-      const meta = cartMeta[cartKey];
-      const offerPrice = meta?.offerPrice || product.offerPrice;
-      totalAmount += offerPrice * quantity;
+    
+    if (cartKey.includes('_')) {
+      // Weight variant product
+      const [productId, weight] = cartKey.split('_');
+      const product = products.find((p) => p._id === productId);
+      
+      if (product && quantity > 0) {
+        // Find the weight variant and use FRESH price
+        const weightVariant = product.weights?.find(w => w.weight === weight);
+        const offerPrice = weightVariant?.offerPrice || product.offerPrice;
+        totalAmount += offerPrice * quantity;
+      }
+    } else {
+      // Regular product
+      const product = products.find((p) => p._id === cartKey);
+      
+      if (product && quantity > 0) {
+        // Use FRESH price from products array
+        totalAmount += product.offerPrice * quantity;
+      }
     }
   }
 
