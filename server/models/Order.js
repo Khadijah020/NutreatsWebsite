@@ -21,6 +21,25 @@ const orderSchema = new mongoose.Schema({
             type: String,
             required: false, // ✅ Added weight field - optional for products without variants
         },
+        // ✅ NEW: Store price at time of order
+        price: {
+            type: Number,
+            required: true, // Original price
+        },
+        // ✅ NEW: Store offer price (discounted price) at time of order
+        offerPrice: {
+            type: Number,
+            required: true, // Actual price paid
+        },
+        // ✅ OPTIONAL: Store product details for historical reference
+        name: {
+            type: String,
+            required: false,
+        },
+        image: {
+            type: String,
+            required: false,
+        },
     }],
     amount: {
         type: Number,

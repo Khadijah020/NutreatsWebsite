@@ -34,27 +34,27 @@ const SellerLayout = () => {
   return (
     <>
       {/* Top Navbar */}
-      <div className="flex items-center justify-between px-4 md:px-10 lg:px-16 py-3 bg-linear-to-r from-[#AD3A24] to-[#8B2E1A] border-b border-amber-200/20 shadow-md sticky top-0 z-50">
+      <div className="flex items-center justify-between px-4 md:px-10 lg:px-16 py-3 bg-[#bfd9bde0] border-b border-gray-300 shadow-md sticky top-0 z-50">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="logo" className="w-24 md:w-32 h-auto brightness-0 invert" />
+          <img src={logo} alt="logo" className="w-24 md:w-32 h-auto" />
         </Link>
 
         <div className="flex items-center gap-3">
           {/* Mobile hamburger menu */}
           <button
-            className="sm:hidden p-2 rounded-md hover:bg-white/10 transition text-white"
+            className="sm:hidden p-2 rounded-md hover:bg-white/60 transition text-gray-700"
             onClick={() => setSidebarOpen(prev => !prev)}
           >
             <Menu size={20} />
           </button>
 
           {/* Greeting */}
-          <p className="hidden sm:block font-medium text-white/90">Hi Admin!</p>
+          <p className="hidden sm:block font-medium text-gray-700">Hi Admin!</p>
 
           {/* Logout */}
           <button
             onClick={logout}
-            className="px-4 py-1.5 rounded-full bg-white text-[#AD3A24] text-sm font-semibold hover:bg-amber-50 transition shadow-sm"
+            className="px-4 py-1.5 rounded-full bg-[#EB8A14] text-white text-sm font-semibold hover:bg-orange-600 transition shadow-sm"
           >
             Logout
           </button>
@@ -62,9 +62,9 @@ const SellerLayout = () => {
       </div>
 
       {/* Sidebar + Main */}
-      <div className="flex bg-[#faf7f2] min-h-[calc(100vh-70px)]">
+      <div className="flex bg-[#bfd9bde0] min-h-[calc(100vh-70px)]">
         {/* Sidebar for large screens */}
-        <div className="hidden sm:flex md:w-64 w-64 border-r border-amber-200/30 bg-[#ecd4d0]/50 flex-col pt-4 shadow-sm">
+        <div className="hidden sm:flex md:w-64 w-64 border-r border-gray-300 bg-[#bfd9bde0] flex-col pt-4 shadow-sm">
           {sidebarLinks.map((item) => {
             const IconComponent = item.icon;
             return (
@@ -75,8 +75,8 @@ const SellerLayout = () => {
                 className={({ isActive }) =>
                   `flex items-center py-3 px-4 gap-3 rounded-r-full mx-2 my-1 transition-all ${
                     isActive
-                      ? "bg-[#AD3A24] text-white font-medium shadow-md"
-                      : "hover:bg-white/60 text-gray-700"
+                      ? "bg-[#EB8A14] text-white font-medium shadow-md"
+                      : "hover:bg-white text-gray-700"
                   }`
                 }
               >
@@ -90,7 +90,7 @@ const SellerLayout = () => {
         {/* Sidebar for mobile/tablet */}
         <div
           className={`
-            fixed top-0 left-0 z-50 h-full bg-[#ecd4d0] border-r border-amber-200/30 flex flex-col pt-4 shadow-lg
+            fixed top-0 left-0 z-50 h-full bg-white/95 border-r border-gray-300 flex flex-col pt-4 shadow-lg
             transform transition-transform duration-300
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
             sm:hidden w-56
@@ -106,8 +106,8 @@ const SellerLayout = () => {
                 className={({ isActive }) =>
                   `flex items-center py-3 px-4 gap-3 rounded-r-full mx-2 my-1 transition-all ${
                     isActive
-                      ? "bg-[#AD3A24] text-white font-medium shadow-md"
-                      : "hover:bg-white/60 text-gray-700"
+                      ? "bg-[#EB8A14] text-white font-medium shadow-md"
+                      : "hover:bg-gray-100 text-gray-700"
                   }`
                 }
                 onClick={() => setSidebarOpen(false)}

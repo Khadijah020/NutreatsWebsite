@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { Trash2, Edit2, Upload, ArrowLeft } from "lucide-react";
+import { Trash2, Edit2, Upload, ArrowLeft, X } from "lucide-react";
 import RichTextEditor from "../../components/seller/RichTextEditor.jsx";
 
 const EditProductDetails = () => {
@@ -19,6 +19,7 @@ const EditProductDetails = () => {
     image: [],
     category: "",
     inStock: true,
+    isFeatured: false,
     weights: [],
   });
   const [categories, setCategories] = useState([]);
@@ -50,14 +51,12 @@ const EditProductDetails = () => {
     }
   };
 
-  // ✅ FIX: Properly handle description state
   const fetchProduct = async () => {
     try {
       const { data } = await axios.post("/api/product/id", { id });
       if (data.success) {
         const productData = data.product;
 
-        // Convert description to string
         let cleanDescription = "";
         
         if (typeof productData.description === "string") {
@@ -68,16 +67,12 @@ const EditProductDetails = () => {
             .join("<br>");
         }
 
-        // ✅ Set state with the cleaned description
         setProduct({
           ...productData,
           description: cleanDescription
         });
         
         setImagePreview(productData.image);
-        
-        console.log("📝 Loaded description:", cleanDescription);
-        console.log("📝 Description type:", typeof cleanDescription);
       } else {
         toast.error("Failed to load product");
       }
@@ -88,9 +83,7 @@ const EditProductDetails = () => {
     }
   };
 
-  // ✅ FIX: Make sure handleInputChange properly updates description
   const handleInputChange = (field, value) => {
-    console.log(`🔄 Updating ${field}:`, value);
     setProduct((prev) => ({
       ...prev,
       [field]: value,
@@ -229,13 +222,7 @@ const EditProductDetails = () => {
     setImagePreview((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ✅ FIX: Debug and ensure description is included
   const handleSave = async () => {
-    // Log the current state before saving
-    console.log("📋 Current product state:", product);
-    console.log("📋 Description value:", product.description);
-    console.log("📋 Description type:", typeof product.description);
-
     if (!product.name || !product.category) {
       toast.error("Please fill all required fields");
       return;
@@ -264,12 +251,10 @@ const EditProductDetails = () => {
         image: product.image,
         category: product.category,
         inStock: product.inStock,
+        isFeatured: product.isFeatured,
         weights: product.weights || [],
         description: product.description || "",
       };
-
-      console.log("💾 Sending to backend:", updateData);
-      console.log("💾 Description being sent:", updateData.description);
 
       const { data } = await axios.post("/api/product/update", updateData);
       if (data.success) {
@@ -290,354 +275,341 @@ const EditProductDetails = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#e6dbcee0]">
+      <div className="flex items-center justify-center h-screen bg-[#bfd9bde0]">
         <div className="text-lg text-gray-600">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#faf7f2] py-6 px-4">
-      <div className="w-full max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => window.history.back()}
-              className="p-2 hover:bg-amber-100/50 rounded-xl transition-colors border border-amber-200/30"
-            >
-              <ArrowLeft size={20} className="text-[#8B2E1A]" />
-            </button>
-            <h2 className="text-2xl font-bold text-[#8B2E1A]">
-              Edit Product Details
-            </h2>
+    <div className="min-h-screen bg-[#bfd9bde0] flex justify-center items-start py-8 md:py-12 overflow-y-auto">
+      <div className="w-full max-w-6xl mx-auto bg-white rounded-2xl border-4 border-[#EB8A14] overflow-hidden">
+        <div className="p-8 md:p-12 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.history.back()}
+                className="p-2 hover:bg-[#bfd9bde0] rounded-xl transition-colors border border-[#EB8A14]"
+              >
+                <ArrowLeft size={20} className="text-[#EB8A14]" />
+              </button>
+              <h2 className="text-3xl font-bold text-center text-black">
+                Edit Product Details
+              </h2>
+            </div>
           </div>
-        </div>
 
-        {/* Main Card */}
-        <div className="bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-20 h-20 border-t border-l border-amber-300/30 rounded-tl-3xl"></div>
-          <div className="absolute bottom-0 right-0 w-20 h-20 border-b border-r border-amber-300/30 rounded-br-3xl"></div>
+          {/* Product Name */}
+          <div>
+            <label className="font-semibold block mb-1 text-black">
+              Product Name <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              value={product.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
+              placeholder="Enter product name"
+            />
+          </div>
 
-          <div className="bg-[#ecd4d0] rounded-2xl p-6 md:p-10 space-y-6 relative">
-            <div className="absolute top-3 right-3 w-12 h-12 border-t border-r border-amber-200/40 rounded-tr-xl"></div>
-            <div className="absolute bottom-3 left-3 w-12 h-12 border-b border-l border-amber-200/40 rounded-bl-xl"></div>
+          {/* Category */}
+          <div>
+            <label className="font-semibold block mb-1 text-black">
+              Category <span className="text-red-600">*</span>
+            </label>
+            <select
+              value={product.category}
+              onChange={(e) => handleInputChange("category", e.target.value)}
+              className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
+            >
+              <option value="">Select category</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <div className="relative z-10 space-y-6">
-              {/* Product Name */}
+          {/* Description */}
+          <div>
+            <label className="font-semibold block mb-1 text-black">
+              Product Description
+            </label>
+            <RichTextEditor
+              value={product.description}
+              onChange={(value) => handleInputChange("description", value)}
+              placeholder="Describe your product with rich formatting..."
+            />
+          </div>
+
+          {/* Base Pricing */}
+          {!hasWeightVariants && (
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block font-semibold mb-2 text-[#8B2E1A]">
-                  Product Name <span className="text-red-600">*</span>
+                <label className="font-semibold block mb-1 text-black">
+                  Base Price ({currency}) <span className="text-red-600">*</span>
                 </label>
                 <input
-                  type="text"
-                  value={product.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="w-full px-4 py-2.5 border-2 border-amber-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#AD3A24] focus:border-transparent bg-white/80"
-                  placeholder="Enter product name"
+                  type="number"
+                  value={product.price}
+                  onChange={(e) => handleInputChange("price", e.target.value)}
+                  className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
+                  placeholder="0"
                 />
               </div>
-
-              {/* Category */}
               <div>
-                <label className="block font-semibold mb-2 text-[#8B2E1A]">
-                  Category <span className="text-red-600">*</span>
+                <label className="font-semibold block mb-1 text-black">
+                  Base Offer Price ({currency}) <span className="text-red-600">*</span>
                 </label>
-                <select
-                  value={product.category}
-                  onChange={(e) => handleInputChange("category", e.target.value)}
-                  className="w-full px-4 py-2.5 border-2 border-amber-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#AD3A24] focus:border-transparent bg-white/80"
+                <input
+                  type="number"
+                  value={product.offerPrice}
+                  onChange={(e) => handleInputChange("offerPrice", e.target.value)}
+                  className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Weight Variants Section */}
+          <div className="border-t-2 border-[#EB8A14] pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-lg font-bold text-[#EB8A14] flex items-center gap-2">
+                Weight Variants {hasWeightVariants && <span className="text-red-600">*</span>}
+              </label>
+              {hasBasePricing && !hasWeightVariants && (
+                <button
+                  onClick={switchToWeightVariants}
+                  className="text-sm text-[#EB8A14] hover:text-orange-600 font-semibold"
                 >
-                  <option value="">Select category</option>
-                  {categories.map((cat) => (
-                    <option key={cat._id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block font-semibold mb-2 text-[#8B2E1A]">
-                  Product Description
-                </label>
-                <RichTextEditor
-                  value={product.description}
-                  onChange={(value) => handleInputChange("description", value)}
-                  placeholder="Describe your product with rich formatting..."
-                />
-              </div>
-
-              {/* Base Pricing */}
-              {!hasWeightVariants && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold mb-2 text-[#8B2E1A]">
-                      Base Price <span className="text-red-600">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
-                        {currency}
-                      </span>
-                      <input
-                        type="number"
-                        value={product.price}
-                        onChange={(e) => handleInputChange("price", e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 border-2 border-amber-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#AD3A24] focus:border-transparent bg-white/80"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block font-semibold mb-2 text-[#8B2E1A]">
-                      Base Offer Price <span className="text-red-600">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
-                        {currency}
-                      </span>
-                      <input
-                        type="number"
-                        value={product.offerPrice}
-                        onChange={(e) => handleInputChange("offerPrice", e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 border-2 border-amber-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#AD3A24] focus:border-transparent bg-white/80"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                </div>
+                  Switch to Weight Variants
+                </button>
               )}
+            </div>
 
-              {/* Weight Variants Section */}
-              <div className="border-t-2 border-amber-200/50 pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block font-semibold text-[#8B2E1A]">
-                    Weight Variants{" "}
-                    {hasWeightVariants && <span className="text-red-600">*</span>}
-                  </label>
-                  {hasBasePricing && !hasWeightVariants && (
-                    <button
-                      onClick={switchToWeightVariants}
-                      className="text-sm text-[#AD3A24] hover:text-[#8B2E1A] font-semibold"
-                    >
-                      Switch to Weight Variants
-                    </button>
-                  )}
-                </div>
-
-                {product.weights && product.weights.length > 0 && (
-                  <div className="mb-4 space-y-2">
-                    {product.weights.map((w, index) => (
-                      <div
-                        key={index}
-                        className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
-                          editingWeightIndex === index
-                            ? "bg-white/80 border-[#AD3A24]"
-                            : "bg-white/60 border-amber-200/50"
-                        }`}
-                      >
-                        <div className="flex gap-4 text-sm">
-                          <span className="font-semibold text-gray-900">
-                            {w.weight}
-                          </span>
-                          <span className="text-gray-700">
-                            {currency}{w.price}
-                          </span>
-                          <span className="text-[#AD3A24] font-medium">
-                            Offer: {currency}{w.offerPrice}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => startEditingWeight(index)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#AD3A24] text-white hover:bg-[#8B2E1A] text-sm font-medium transition-colors"
-                          >
-                            <Edit2 size={14} />
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeWeightVariant(index)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition-colors"
-                          >
-                            <Trash2 size={14} />
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {(!hasBasePricing || hasWeightVariants) && (
-                  <div className="space-y-3 bg-white/60 p-4 rounded-xl border-2 border-amber-200/50">
-                    {editingWeightIndex !== null && (
-                      <div className="text-sm font-semibold text-[#AD3A24] mb-2">
-                        Editing weight variant
-                      </div>
-                    )}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#8B2E1A] mb-1">
-                        Weight (e.g., 50g, 100g, 1kg)
-                      </label>
-                      <input
-                        type="text"
-                        value={currentWeight.weight}
-                        onChange={(e) =>
-                          setCurrentWeight({
-                            ...currentWeight,
-                            weight: e.target.value,
-                          })
-                        }
-                        placeholder="50g"
-                        className="w-full px-3 py-2 border-2 border-amber-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#AD3A24] focus:border-transparent bg-white"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-semibold text-[#8B2E1A] mb-1">
-                          Price
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">
-                            {currency}
-                          </span>
-                          <input
-                            type="number"
-                            value={currentWeight.price}
-                            onChange={(e) =>
-                              setCurrentWeight({
-                                ...currentWeight,
-                                price: e.target.value,
-                              })
-                            }
-                            placeholder="100"
-                            className="w-full pl-10 pr-3 py-2 border-2 border-amber-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#AD3A24] focus:border-transparent bg-white"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#8B2E1A] mb-1">
-                          Offer Price
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">
-                            {currency}
-                          </span>
-                          <input
-                            type="number"
-                            value={currentWeight.offerPrice}
-                            onChange={(e) =>
-                              setCurrentWeight({
-                                ...currentWeight,
-                                offerPrice: e.target.value,
-                              })
-                            }
-                            placeholder="80"
-                            className="w-full pl-10 pr-3 py-2 border-2 border-amber-200/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#AD3A24] focus:border-transparent bg-white"
-                          />
-                        </div>
-                      </div>
+            {product.weights && product.weights.length > 0 && (
+              <div className="mb-4 space-y-2">
+                {product.weights.map((w, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                      editingWeightIndex === index
+                        ? "bg-white border-[#EB8A14]"
+                        : "bg-[#bfd9bde0] border-[#EB8A14]"
+                    }`}
+                  >
+                    <div className="flex gap-4 text-sm">
+                      <span className="font-semibold text-[#EB8A14]">
+                        {w.weight}
+                      </span>
+                      <span className="text-gray-700">
+                        {currency}{w.price}
+                      </span>
+                      <span className="text-orange-600 font-medium">
+                        Offer: {currency}{w.offerPrice}
+                      </span>
                     </div>
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={addWeightVariant}
-                        className="flex-1 py-2.5 bg-linear-to-r from-[#AD3A24] to-[#8B2E1A] text-white rounded-xl hover:from-[#8B2E1A] hover:to-[#AD3A24] font-semibold transition-all shadow-md"
+                        onClick={() => startEditingWeight(index)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#EB8A14] text-white hover:bg-orange-600 text-sm font-medium transition-colors"
                       >
-                        {editingWeightIndex !== null
-                          ? "Update Weight Variant"
-                          : "Add Weight Variant"}
+                        <Edit2 size={14} />
+                        Edit
                       </button>
-                      {editingWeightIndex !== null && (
-                        <button
-                          type="button"
-                          onClick={cancelEditingWeight}
-                          className="px-4 py-2.5 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 font-semibold transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeWeightVariant(index)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition-colors"
+                      >
+                        <Trash2 size={14} />
+                        Remove
+                      </button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {(!hasBasePricing || hasWeightVariants) && (
+              <div className="space-y-3 bg-white p-4 rounded-xl border-2 border-[#EB8A14]">
+                {editingWeightIndex !== null && (
+                  <div className="text-sm font-semibold text-[#EB8A14] mb-2">
+                    Editing weight variant
                   </div>
                 )}
-              </div>
-
-              {/* Product Images */}
-              <div>
-                <label className="block font-semibold mb-2 text-[#8B2E1A]">
-                  Product Images <span className="text-red-600">*</span>
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  {imagePreview.map((img, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={img}
-                        alt={`Product ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-xl border-2 border-amber-200/50"
-                      />
-                      <button
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 shadow-md"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <label className="relative flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-amber-200 rounded-xl cursor-pointer hover:border-[#AD3A24] hover:bg-white/50 transition-all bg-white/30">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Upload size={20} className="text-[#AD3A24]" />
-                    <span className="text-sm font-semibold">
-                      {uploadingImages ? "Uploading..." : "Choose images to upload"}
-                    </span>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-1">
+                      Weight (e.g., 50g, 100g, 1kg)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentWeight.weight}
+                      onChange={(e) =>
+                        setCurrentWeight({
+                          ...currentWeight,
+                          weight: e.target.value,
+                        })
+                      }
+                      placeholder="50g"
+                      className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
+                    />
                   </div>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploadingImages}
-                    className="hidden"
-                  />
-                </label>
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-1">
+                      Price
+                    </label>
+                    <input
+                      type="number"
+                      value={currentWeight.price}
+                      onChange={(e) =>
+                        setCurrentWeight({
+                          ...currentWeight,
+                          price: e.target.value,
+                        })
+                      }
+                      placeholder="100"
+                      className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-1">
+                      Offer Price
+                    </label>
+                    <input
+                      type="number"
+                      value={currentWeight.offerPrice}
+                      onChange={(e) =>
+                        setCurrentWeight({
+                          ...currentWeight,
+                          offerPrice: e.target.value,
+                        })
+                      }
+                      placeholder="80"
+                      className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={addWeightVariant}
+                    className="flex-1 py-2.5 bg-[#EB8A14] text-white rounded-xl hover:bg-orange-600 font-semibold transition-all shadow-md"
+                  >
+                    {editingWeightIndex !== null
+                      ? "Update Weight Variant"
+                      : "Add Weight Variant"}
+                  </button>
+                  {editingWeightIndex !== null && (
+                    <button
+                      type="button"
+                      onClick={cancelEditingWeight}
+                      className="px-4 py-2.5 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 font-semibold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
+            )}
+          </div>
 
-              {/* In Stock Toggle */}
-              <div className="flex items-center gap-3 border-t-2 border-amber-200/50 pt-6">
-                <label className="font-semibold text-[#8B2E1A]">In Stock</label>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={product.inStock}
-                    onChange={(e) => handleInputChange("inStock", e.target.checked)}
-                    className="sr-only peer"
+          {/* Product Images */}
+          <div>
+            <label className="font-semibold block mb-2 text-black">
+              Product Images <span className="text-red-600">*</span>
+            </label>
+            <div className="flex flex-wrap gap-4 mb-4">
+              {imagePreview.map((img, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={img}
+                    alt={`Product ${index + 1}`}
+                    className="w-28 h-28 object-cover rounded-2xl border-2 border-[#EB8A14]"
                   />
-                  <div className="w-12 h-7 bg-gray-300 rounded-full peer peer-checked:bg-[#AD3A24] transition-colors duration-200"></div>
-                  <span className="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform duration-200 ease-in-out peer-checked:translate-x-5 shadow-sm"></span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-4 pt-4 border-t-2 border-amber-200/50">
-                <button
-                  onClick={handleSave}
-                  disabled={saving || uploadingImages}
-                  className="flex-1 px-6 py-3 bg-linear-to-r from-[#AD3A24] to-[#8B2E1A] text-white rounded-xl hover:from-[#8B2E1A] hover:to-[#AD3A24] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all shadow-md"
-                >
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-                <button
-                  onClick={() => navigate("/seller/product-list")}
-                  disabled={saving}
-                  className="px-6 py-3 bg-white/80 text-gray-700 rounded-xl hover:bg-white border-2 border-amber-200/50 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
+                  <button
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 shadow-md border-2 border-white"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+              
+              <label className="relative cursor-pointer border-2 border-dashed border-[#EB8A14] rounded-2xl w-28 h-28 flex items-center justify-center hover:border-orange-600 transition-all hover:scale-105 hover:bg-[#bfd9bde0]">
+                <div className="flex items-center gap-2 text-gray-700">
+                  <Upload size={20} className="text-[#EB8A14]" />
+                </div>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImages}
+                  className="hidden"
+                />
+              </label>
             </div>
+          </div>
+
+          {/* Toggles Section */}
+          <div className="space-y-4 border-t-2 border-[#EB8A14] pt-6">
+            {/* In Stock Toggle */}
+            <div className="flex items-center gap-3">
+              <label className="font-semibold text-black">In Stock</label>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={product.inStock}
+                  onChange={(e) => handleInputChange("inStock", e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-12 h-7 bg-gray-300 rounded-full peer peer-checked:bg-[#EB8A14] transition-colors duration-200"></div>
+                <span className="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform duration-200 ease-in-out peer-checked:translate-x-5 shadow-sm"></span>
+              </label>
+            </div>
+
+            {/* Featured Toggle */}
+            <div className="flex items-center gap-3">
+              <label className="font-semibold text-black">Mark as Featured</label>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={product.isFeatured}
+                  onChange={(e) => handleInputChange("isFeatured", e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-12 h-7 bg-gray-300 rounded-full peer peer-checked:bg-[#EB8A14] transition-colors duration-200"></div>
+                <span className="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform duration-200 ease-in-out peer-checked:translate-x-5 shadow-sm"></span>
+              </label>
+              <span className="text-sm text-gray-600">
+                (Featured products appear on the homepage)
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4 pt-6 border-t-2 border-[#EB8A14]">
+            <button
+              onClick={handleSave}
+              disabled={saving || uploadingImages}
+              className="flex-1 px-6 py-3 bg-[#EB8A14] text-white rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all shadow-md border-2 border-[#EB8A14]"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+            <button
+              onClick={() => navigate("/seller/product-list")}
+              disabled={saving}
+              className="px-6 py-3 bg-white text-gray-700 rounded-xl hover:bg-gray-100 border-2 border-[#EB8A14] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </div>

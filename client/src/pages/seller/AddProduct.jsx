@@ -12,6 +12,7 @@ const AddProduct = () => {
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
   const [offerPrice, setOfferPrice] = useState("");
+  const [isFeatured, setIsFeatured] = useState(false); // ✅ NEW: Featured toggle
   const { axios } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -82,6 +83,7 @@ const AddProduct = () => {
         price: weights.length ? null : price,
         offerPrice: weights.length ? null : offerPrice,
         weights,
+        isFeatured, // ✅ Include featured status
       };
 
       const formData = new FormData();
@@ -99,6 +101,7 @@ const AddProduct = () => {
         setOfferPrice("");
         setFiles([]);
         setWeights([]);
+        setIsFeatured(false); // ✅ Reset featured status
       } else toast.error(data.message);
     } catch (error) {
       toast.error(error.message);
@@ -108,32 +111,24 @@ const AddProduct = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf7f2] flex justify-center items-start py-8 md:py-12 overflow-y-auto">
+    <div className="min-h-screen bg-[#bfd9bde0] flex justify-center items-start py-8 md:py-12 overflow-y-auto">
       <form
         onSubmit={onSubmitHandler}
-        className="w-full max-w-6xl mx-auto bg-linear-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/20 relative overflow-hidden"
+        className="w-full max-w-6xl mx-auto bg-white rounded-2xl border-4 border-[#EB8A14] overflow-hidden"
       >
-        {/* Decorative corners */}
-        <div className="absolute top-0 left-0 w-20 h-20 border-t border-l border-amber-300/30 rounded-tl-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-20 h-20 border-b border-r border-amber-300/30 rounded-br-3xl"></div>
-
-        <div className="bg-[#ecd4d0] rounded-2xl p-8 md:p-12 space-y-6 relative">
-          {/* Inner decorative corners */}
-          <div className="absolute top-3 right-3 w-12 h-12 border-t border-r border-amber-200/40 rounded-tr-xl"></div>
-          <div className="absolute bottom-3 left-3 w-12 h-12 border-b border-l border-amber-200/40 rounded-bl-xl"></div>
-
-          <h2 className="text-3xl font-bold text-center text-[#8B2E1A] relative z-10">
+        <div className="p-8 md:p-12 space-y-6">
+          <h2 className="text-3xl font-bold text-center text-black">
             Add New Product
           </h2>
 
           {/* Upload Images */}
-          <div className="relative z-10">
-            <p className="text-base font-semibold mb-2 text-gray-700">Product Images</p>
+          <div>
+            <p className="text-base font-semibold mb-2 text-black">Product Images</p>
             <div className="flex flex-wrap gap-4">
               {files.map((file, index) => (
                 <label
                   key={index}
-                  className="relative cursor-pointer border border-dashed border-amber-300 rounded-2xl w-28 h-28 flex items-center justify-center hover:border-[#AD3A24] transition-all hover:scale-105 hover:bg-white/50"
+                  className="relative cursor-pointer border-2 border-dashed border-[#EB8A14] rounded-2xl w-28 h-28 flex items-center justify-center hover:border-orange-600 transition-all hover:scale-105 hover:bg-[#bfd9bde0]"
                 >
                   <input
                     type="file"
@@ -152,13 +147,13 @@ const AddProduct = () => {
                       className="w-full h-full object-cover rounded-2xl"
                     />
                   ) : (
-                    <Upload className="text-[#AD3A24] w-8 h-8" />
+                    <Upload className="text-black w-8 h-8" />
                   )}
                   {file && (
                     <button
                       type="button"
                       onClick={() => setFiles(files.filter((_, i) => i !== index))}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 border-2 border-white"
                     >
                       <X size={14} />
                     </button>
@@ -169,17 +164,17 @@ const AddProduct = () => {
               <button
                 type="button"
                 onClick={() => setFiles([...files, null])}
-                className="border border-dashed border-amber-300 rounded-2xl w-28 h-28 flex items-center justify-center hover:border-[#AD3A24] transition-all hover:scale-105 hover:bg-white/50"
+                className="border-2 border-dashed border-[#EB8A14] rounded-2xl w-28 h-28 flex items-center justify-center hover:border-orange-600 transition-all hover:scale-105 hover:bg-[#bfd9bde0]"
               >
-                <PlusCircle className="text-[#AD3A24] w-8 h-8" />
+                <PlusCircle className="text-[#EB8A14] w-8 h-8" />
               </button>
             </div>
           </div>
 
           {/* Product Info */}
-          <div className="space-y-4 relative z-10">
+          <div className="space-y-4">
             <div>
-              <label className="font-semibold block mb-1 text-gray-700">
+              <label className="font-semibold block mb-1 text-black">
                 Product Name
               </label>
               <input
@@ -188,12 +183,12 @@ const AddProduct = () => {
                 required
                 type="text"
                 placeholder="e.g. Premium Almonds"
-                className="w-full border border-amber-200/50 shadow-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-[#AD3A24] focus:border-[#AD3A24] outline-none bg-white/80"
+                className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
               />
             </div>
 
             <div>
-              <label className="font-semibold block mb-1 text-gray-700">
+              <label className="font-semibold block mb-1 text-black">
                 Description
               </label>
               <RichTextEditor
@@ -204,11 +199,11 @@ const AddProduct = () => {
             </div>
 
             <div>
-              <label className="font-semibold block mb-1 text-gray-700">
+              <label className="font-semibold block mb-1 text-black">
                 Category
               </label>
               {loadingCategories ? (
-                <div className="w-full border border-amber-200/50 shadow-sm rounded-xl px-3 py-2.5 bg-white/80 text-gray-500">
+                <div className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 bg-white text-[#EB8A14]">
                   Loading categories...
                 </div>
               ) : (
@@ -216,7 +211,7 @@ const AddProduct = () => {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   required
-                  className="w-full border border-amber-200/50 shadow-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-[#AD3A24] focus:border-[#AD3A24] outline-none bg-white/80"
+                  className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                 >
                   <option value="">Select Category</option>
                   {categories.map((item) => (
@@ -227,7 +222,7 @@ const AddProduct = () => {
                 </select>
               )}
               {!loadingCategories && categories.length === 0 && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-[#EB8A14] mt-1">
                   No categories available. Please add categories first.
                 </p>
               )}
@@ -236,9 +231,9 @@ const AddProduct = () => {
 
           {/* Base Price */}
           {!weights.length && (
-            <div className="grid grid-cols-2 gap-4 relative z-10">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="font-semibold block mb-1 text-gray-700">
+                <label className="font-semibold block mb-1 text-black">
                   Base Price (Rs.)
                 </label>
                 <input
@@ -246,11 +241,11 @@ const AddProduct = () => {
                   onChange={(e) => setPrice(e.target.value)}
                   type="number"
                   placeholder="0"
-                  className="w-full border border-amber-200/50 shadow-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-[#AD3A24] focus:border-[#AD3A24] outline-none bg-white/80"
+                  className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                 />
               </div>
               <div>
-                <label className="font-semibold block mb-1 text-gray-700">
+                <label className="font-semibold block mb-1 text-black">
                   Base Offer Price (Rs.)
                 </label>
                 <input
@@ -258,15 +253,15 @@ const AddProduct = () => {
                   onChange={(e) => setOfferPrice(e.target.value)}
                   type="number"
                   placeholder="0"
-                  className="w-full border border-amber-200/50 shadow-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-[#AD3A24] focus:border-[#AD3A24] outline-none bg-white/80"
+                  className="w-full border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                 />
               </div>
             </div>
           )}
 
           {/* Weight Variants */}
-          <div className="border-t border-amber-200/50 pt-5 relative z-10">
-            <p className="text-lg font-bold mb-3 text-gray-700 flex items-center gap-2">
+          <div className="border-t-2 border-[#EB8A14] pt-5">
+            <p className="text-lg font-bold mb-3 text-[#EB8A14] flex items-center gap-2">
               Weight Variants (optional)
             </p>
 
@@ -275,12 +270,12 @@ const AddProduct = () => {
                 {weights.map((w, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between bg-white/60 px-4 py-2 rounded-xl border border-amber-200/50"
+                    className="flex items-center justify-between bg-[#bfd9bde0] px-4 py-2 rounded-xl border-2 border-[#EB8A14]"
                   >
                     <div className="flex gap-4 text-sm text-gray-800">
-                      <span className="font-medium">{w.weight}</span>
-                      <span>Rs.{w.price}</span>
-                      <span className="text-[#AD3A24]">Offer: Rs.{w.offerPrice}</span>
+                      <span className="font-medium text-[#EB8A14]">{w.weight}</span>
+                      <span className="text-[#EB8A14]">Rs.{w.price}</span>
+                      <span className="text-orange-600 font-semibold">Offer: Rs.{w.offerPrice}</span>
                     </div>
                     <button
                       type="button"
@@ -301,41 +296,59 @@ const AddProduct = () => {
                 onChange={(e) => setCurrentWeight({ ...currentWeight, weight: e.target.value })}
                 type="text"
                 placeholder="Weight (e.g. 100g)"
-                className="border border-amber-200/50 shadow-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-[#AD3A24] focus:border-[#AD3A24] outline-none bg-white/80"
+                className="border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
               />
               <input
                 value={currentWeight.price}
                 onChange={(e) => setCurrentWeight({ ...currentWeight, price: e.target.value })}
                 type="number"
                 placeholder="Price"
-                className="border border-amber-200/50 shadow-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-[#AD3A24] focus:border-[#AD3A24] outline-none bg-white/80"
+                className="border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
               />
               <input
                 value={currentWeight.offerPrice}
                 onChange={(e) => setCurrentWeight({ ...currentWeight, offerPrice: e.target.value })}
                 type="number"
                 placeholder="Offer Price"
-                className="border border-amber-200/50 shadow-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-[#AD3A24] focus:border-[#AD3A24] outline-none bg-white/80"
+                className="border-2 border-[#EB8A14] shadow-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
               />
             </div>
 
             <button
               type="button"
               onClick={addWeightVariant}
-              className="mt-4 flex items-center justify-center w-full gap-2 bg-[#AD3A24] hover:bg-[#8B2E1A] text-white font-semibold rounded-xl py-2.5 transition-transform hover:scale-[1.02] shadow-md"
+              className="mt-4 flex items-center justify-center w-full gap-2 bg-[#EB8A14] hover:bg-orange-600 text-white font-semibold rounded-xl py-2.5 transition-transform hover:scale-[1.02] shadow-md border-2 border-[#EB8A14]"
             >
               <PlusCircle size={18} /> Add Weight Variant
             </button>
+          </div>
+
+          {/* ✅ FEATURED TOGGLE */}
+          <div className="flex items-center gap-3 border-t-2 border-[#EB8A14] pt-6">
+            <label className="font-semibold text-black">Mark as Featured</label>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isFeatured}
+                onChange={(e) => setIsFeatured(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-12 h-7 bg-gray-300 rounded-full peer peer-checked:bg-[#EB8A14] transition-colors duration-200"></div>
+              <span className="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform duration-200 ease-in-out peer-checked:translate-x-5 shadow-sm"></span>
+            </label>
+            <span className="text-sm text-gray-600">
+              (Featured products appear on the homepage)
+            </span>
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
             disabled={loading || loadingCategories}
-            className={`w-full py-3 mt-6 rounded-xl text-white font-semibold flex items-center justify-center gap-2 transition-transform relative z-10 ${
+            className={`w-full py-3 mt-6 rounded-xl text-white font-semibold flex items-center justify-center gap-2 transition-transform ${
               loading || loadingCategories
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-[#8B2E1A] hover:bg-[#AD3A24] transition-transform hover:scale-[1.02] shadow-md"
+                ? "bg-gray-400 cursor-not-allowed border-2 border-gray-400"
+                : "bg-[#EB8A14] hover:bg-orange-600 transition-transform hover:scale-[1.02] shadow-md border-2 border-[#EB8A14]"
             }`}
           >
             {loading && <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>}

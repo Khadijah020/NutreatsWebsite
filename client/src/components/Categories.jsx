@@ -125,7 +125,7 @@ const Categories = () => {
                     navigate(`/${category.name.toLowerCase()}`, { state: { fromHome: true } });
                   }, 50);
                 }}
-                className="cursor-pointer group flex flex-col items-center bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] 
+                className="cursor-pointer group flex flex-col items-center bg-[#EB8A14]
                            rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 
                            min-w-[240px] sm:min-w-[280px] md:min-w-[320px] 
                            p-5 sm:p-6 md:p-7 border-2 border-amber-200/20 relative overflow-hidden"
@@ -135,7 +135,7 @@ const Categories = () => {
                 <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-amber-300/30 rounded-br-3xl"></div>
                 
                 {/* White Inner Card with Content */}
-                <div className="relative bg-[#ecd4d0] rounded-2xl shadow-md w-full p-5 sm:p-6 md:p-7 
+                <div className="relative bg-[#bfd9bde0] rounded-2xl shadow-md w-full p-5 sm:p-6 md:p-7 
                               flex flex-col items-center group-hover:shadow-xl group-hover:scale-[1.02] 
                               transition-all duration-500 min-h-[280px] sm:min-h-[320px] md:min-h-[360px]">
                   
@@ -158,7 +158,7 @@ const Categories = () => {
                   )}
                   
                   {/* Title */}
-                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-[#AD3A24] group-hover:text-[#8B2E1A] 
+                  <h3 className="text-base sm:text-xl md:text-2xl font-bold text-[#C07111] group-hover:text-[#EB8A14] 
                                transition text-center mb-2 sm:mb-3 tracking-wide">
                     {category.name}
                   </h3>

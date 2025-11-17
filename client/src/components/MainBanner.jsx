@@ -14,7 +14,8 @@ const MainBanner = () => {
           alt="Spices and pantry items"
           className="w-full h-full object-cover transition-opacity duration-700 opacity-90 hover:opacity-100"
         />
-        <div className="absolute inset-0 bg-linear-to-r from-amber-900/70 via-orange-900/50 to-transparent"></div>
+        {/* Updated gradient to match categories theme - using greens and earth tones */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#6B6666]/80 via-[#EB8A14]/60 to-transparent"></div>
 
         {/* Decorative Pattern Overlay */}
         <div className="absolute inset-0 opacity-10">
@@ -31,40 +32,42 @@ const MainBanner = () => {
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="max-w-2xl">
-          <div className="inline-block mb-4 px-5 py-2 bg-linear-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold rounded-full shadow-lg border-2 border-orange-300/30">
+          {/* Updated badge with matching colors */}
+          <div className="inline-block mb-4 px-5 py-2 bg-gradient-to-r from-[#EB8A14] to-[#96580D] text-white text-sm font-semibold rounded-full shadow-lg border-2 border-[#F2B469]/30">
             ✨ اصلی مصالحہ - Authentic Pakistani Spices
           </div>
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-6 leading-tight drop-shadow-2xl">
             Premium Quality
             <br />
-            <span className="bg-linear-to-r from-amber-300 via-orange-300 to-amber-400 bg-clip-text text-transparent">
+            {/* Updated gradient text to match categories */}
+            <span className="bg-gradient-to-r from-[#EB8A14] via-[#F2B469] to-[#F2B469] bg-clip-text text-transparent">
               Natural Pantry
             </span>
             <br />
             Essentials
           </h1>
 
-          <p className="text-lg md:text-xl text-amber-50 mb-8 max-w-xl leading-relaxed drop-shadow-lg">
+          <p className="text-lg md:text-xl text-white/95 mb-8 max-w-xl leading-relaxed drop-shadow-lg">
             Discover our curated collection of authentic spices, organic lentils, pure oils, and wholesome grains. Traditional flavors, premium quality — delivered to your doorstep.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Shop Now Button */}
+            {/* Shop Now Button - Updated to match categories theme */}
             <button
               onClick={() => navigate("/products")}
-              className="group flex items-center justify-center gap-2 px-8 py-4 bg-linear-to-r from-orange-600 to-amber-600 text-white rounded-full font-semibold shadow-lg border-2 border-orange-400/30 transition-all duration-300 
-              hover:from-orange-700 hover:to-amber-700 hover:scale-105 hover:shadow-[0_0_15px_rgba(255,153,51,0.5)] active:scale-95"
+              className="group flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-[#EB8A14] to-[#96580D] text-white rounded-full font-semibold shadow-lg border-2 border-[#F2B469]/30 transition-all duration-300 
+              hover:from-[#96580D] hover:to-[#EB8A14] hover:scale-105 hover:shadow-[0_0_15px_rgba(235,138,20,0.5)] active:scale-95"
             >
               Shop Now
               <ArrowRight className="h-5 w-5 transform transition-transform duration-300 group-hover:translate-x-1.5" />
             </button>
 
-            {/* View All Products Button */}
+            {/* View All Products Button - Updated to match categories inner card color */}
             <button
               onClick={() => navigate("/products")}
-              className="px-8 py-4 bg-white/95 text-amber-900 rounded-full font-semibold backdrop-blur-sm border-2 border-orange-200 shadow-md transition-all duration-300 
-              hover:bg-amber-50 hover:border-amber-300 hover:scale-105 hover:shadow-[0_0_12px_rgba(255,180,100,0.4)] active:scale-95"
+              className="px-8 py-4 bg-[#bfd9bde0] text-[#96580D] rounded-full font-semibold backdrop-blur-sm border-2 border-[#F2B469]/50 shadow-md transition-all duration-300 
+              hover:bg-[#F2B469] hover:border-[#EB8A14] hover:scale-105 hover:shadow-[0_0_12px_rgba(191,217,189,0.6)] active:scale-95"
             >
               View All Products
             </button>

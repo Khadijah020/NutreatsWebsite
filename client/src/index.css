@@ -8,6 +8,18 @@
 @theme {
   --color-primary: #4fbf8b;
   --color-primary-dull: #44ae7c;
+
+  /* Your granular custom color ("sand") */
+  --color-sand-50: #f8eee4;
+  --color-sand-100: #f1ddc9;
+  --color-sand-200: #e4bd94;
+  --color-sand-300: #d89c60;
+  --color-sand-400: #cc7c2b;
+  --color-sand-500: #d4a367; /* base */
+  --color-sand-600: #b48052;
+  --color-sand-700: #94623e;
+  --color-sand-800: #75452b;
+  --color-sand-900: #563019;
 }
 
 .no-scrollbar::-webkit-scrollbar{

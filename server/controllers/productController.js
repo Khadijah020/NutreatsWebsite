@@ -7,7 +7,7 @@ import { slugify, generateUniqueSlug } from "../utils/slugify.js"
 export const addProduct = async (req, res) => {
   try {
     const productData = JSON.parse(req.body.productData);
-    const { name, description, category, price, offerPrice, weights } = productData;
+    const { name, description, category, price, offerPrice, weights, isFeatured } = productData;
 
     console.log('➕ Adding product:', name);
     console.log('📝 Description received:', description);
@@ -46,6 +46,7 @@ export const addProduct = async (req, res) => {
       image: imagesUrl,
       weights: weights || [],
       inStock: true,
+      isFeatured: isFeatured || false, // ✅ ADD THIS
       date: Date.now()
     });
 
@@ -65,14 +66,26 @@ export const addProduct = async (req, res) => {
 };
 
 // Update Product
-// ✅ FIX 2: updateProduct - Keep description as string
+// Update Product - FIXED VERSION
 export const updateProduct = async (req, res) => {
   try {
-    const { id, name, description, category, price, offerPrice, image, weights, inStock } = req.body;
+    const { 
+      id, 
+      name, 
+      description, 
+      category, 
+      price, 
+      offerPrice, 
+      image, 
+      weights, 
+      inStock,
+      isFeatured // ✅ ADD THIS - Accept isFeatured from request
+    } = req.body;
     
     console.log('🔄 Updating product:', id);
     console.log('📝 Description received:', description);
     console.log('📝 Description type:', typeof description);
+    console.log('⭐ isFeatured received:', isFeatured); // ✅ DEBUG LOG
     
     const updateData = {
       category,
@@ -80,7 +93,8 @@ export const updateProduct = async (req, res) => {
       offerPrice: Number(offerPrice) || 0,
       image: image || [],
       weights: weights || [],
-      inStock: inStock !== undefined ? inStock : true
+      inStock: inStock !== undefined ? inStock : true,
+      isFeatured: isFeatured !== undefined ? isFeatured : false // ✅ ADD THIS LINE
     };
 
     // ✅ Keep description as string - don't convert to array!
@@ -105,14 +119,16 @@ export const updateProduct = async (req, res) => {
       return res.json({ success: false, message: 'Product not found' });
     }
     
-    console.log('✅ Product updated, description type:', typeof updated.description);
+    console.log('✅ Product updated');
+    console.log('   - Description type:', typeof updated.description);
+    console.log('   - isFeatured:', updated.isFeatured); // ✅ VERIFY IT SAVED
+    
     res.json({ success: true, message: "Product updated successfully", product: updated });
   } catch (error) {
     console.error('❌ Update error:', error);
     res.json({ success: false, message: error.message });
   }
 };
-
 
 
 //List Products: /api/product/list

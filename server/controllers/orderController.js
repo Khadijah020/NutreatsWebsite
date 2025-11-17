@@ -11,7 +11,7 @@ export const placeOrderCOD = async (req, res) => {
     if (!items || items.length === 0)
       return res.json({ success: false, message: "Cart is empty" });
 
-    // Calculate total and validate items
+    // ✅ Calculate total and validate items WITH PRICE STORAGE
     let total = 0;
     const validatedItems = [];
 
@@ -20,34 +20,40 @@ export const placeOrderCOD = async (req, res) => {
       if (!product)
         return res.json({ success: false, message: "Product not found" });
 
-      // Determine the price and weight based on what was sent
+      // ✅ Determine the price and weight based on what was sent
       let itemPrice;
+      let itemOfferPrice;
       let weightData = null;
       
       if (item.weight && product.weights && product.weights.length > 0) {
         // Find the weight in product's weights array
-        const weightOption = product.weights.find(w => {
-          return w.weight === item.weight;
-        });
+        const weightOption = product.weights.find(w => w.weight === item.weight);
         
         if (weightOption) {
-          itemPrice = weightOption.offerPrice || weightOption.price;
+          itemPrice = weightOption.price;
+          itemOfferPrice = weightOption.offerPrice || weightOption.price;
           weightData = weightOption.weight; // Store the weight label
         } else {
-          itemPrice = product.offerPrice;
+          itemPrice = product.price;
+          itemOfferPrice = product.offerPrice || product.price;
         }
       } else {
         // No weight, use product's offer price
-        itemPrice = product.offerPrice;
+        itemPrice = product.price;
+        itemOfferPrice = product.offerPrice || product.price;
       }
 
-      total += itemPrice * item.quantity;
+      total += itemOfferPrice * item.quantity;
 
-      // Store the validated item with complete weight information
+      // ✅ Store the validated item with PRICE DATA
       validatedItems.push({
         product: item.product,
         quantity: item.quantity,
-        weight: weightData // Store weight label or null
+        weight: weightData, // Store weight label or null
+        price: itemPrice, // ← STORE ORIGINAL PRICE
+        offerPrice: itemOfferPrice, // ← STORE DISCOUNTED PRICE
+        name: product.name, // ← STORE NAME
+        image: product.image[0] // ← STORE IMAGE
       });
     }
 
@@ -55,30 +61,29 @@ export const placeOrderCOD = async (req, res) => {
     let addressId;
 
     if (!userId) {
-  let existingUser = null;
+      let existingUser = null;
 
-  // Check by email first (if provided)
-  if (address.email) {
-    existingUser = await User.findOne({ email: address.email });
-  }
+      // Check by email first (if provided)
+      if (address.email) {
+        existingUser = await User.findOne({ email: address.email });
+      }
 
-  //  If not found, check by phone (if provided)
-  if (!existingUser && address.phone) {
-    existingUser = await User.findOne({ phone: address.phone });
-  }
+      //  If not found, check by phone (if provided)
+      if (!existingUser && address.phone) {
+        existingUser = await User.findOne({ phone: address.phone });
+      }
 
-  // If still not found, create a new guest user
-  if (!existingUser) {
-    existingUser = await User.create({
-      name: `${address.firstName} ${address.lastName}`,
-      email: address.email || `${address.phone}@guest.local`, // fallback
-      phone: address.phone || null,
-      isGuest: true,
-    });
-  }
+      // If still not found, create a new guest user
+      if (!existingUser) {
+        existingUser = await User.create({
+          name: `${address.firstName} ${address.lastName}`,
+          email: address.email || `${address.phone}@guest.local`, // fallback
+          phone: address.phone || null,
+          isGuest: true,
+        });
+      }
 
-  finalUserId = existingUser._id;
-
+      finalUserId = existingUser._id;
 
       // Save guest's address as a proper Address document
       const newAddress = await Address.create({
@@ -99,10 +104,10 @@ export const placeOrderCOD = async (req, res) => {
       addressId = address; // logged-in user (ObjectId)
     }
 
-    // ✅ Create the order with validated items
+    // ✅ Create the order with validated items (including prices)
     const newOrder = await Order.create({
       userId: finalUserId,
-      items: validatedItems, // Use validated items with weight data
+      items: validatedItems, // Now includes price, offerPrice, name, image
       amount: total,
       address: addressId,
       paymentType: "COD",
@@ -169,7 +174,7 @@ export const createBill = async (req, res) => {
       customerAddressId = newAddress._id;
     }
 
-    // Step 2: Validate products and calculate total
+    // ✅ Step 2: Validate products and calculate total WITH PRICE STORAGE
     let calculatedAmount = 0;
     const validatedItems = [];
 
@@ -184,6 +189,7 @@ export const createBill = async (req, res) => {
       }
 
       let itemPrice;
+      let itemOfferPrice;
       
       // Check if it's a variant (has weight)
       if (item.weight) {
@@ -194,24 +200,31 @@ export const createBill = async (req, res) => {
             message: `Variant ${item.weight} not found for ${product.name}` 
           });
         }
-        itemPrice = variant.offerPrice || variant.price;
+        itemPrice = variant.price;
+        itemOfferPrice = variant.offerPrice || variant.price;
       } else {
-        itemPrice = product.offerPrice || product.price;
+        itemPrice = product.price;
+        itemOfferPrice = product.offerPrice || product.price;
       }
 
-      calculatedAmount += itemPrice * item.quantity;
+      calculatedAmount += itemOfferPrice * item.quantity;
       
+      // ✅ Store with price data
       validatedItems.push({
         product: item.product,
         quantity: item.quantity,
-        weight: item.weight || null
+        weight: item.weight || null,
+        price: itemPrice, // ← STORE ORIGINAL PRICE
+        offerPrice: itemOfferPrice, // ← STORE DISCOUNTED PRICE
+        name: product.name, // ← STORE NAME
+        image: product.image[0] // ← STORE IMAGE
       });
     }
 
     // Step 3: Create the order
     const order = await Order.create({
       userId: null, // Manual bills don't have userId
-      items: validatedItems,
+      items: validatedItems, // Now includes prices
       amount: calculatedAmount,
       address: customerAddressId, // Link to address
       guestAddress: address, // Store guest address data
@@ -239,8 +252,6 @@ export const createBill = async (req, res) => {
     });
   }
 };
-
-// Add this function to your orderController.js (replaces the previous one)
 
 // Toggle Payment Status: /api/order/toggle-payment
 export const togglePaymentStatus = async (req, res) => {
@@ -274,9 +285,6 @@ export const togglePaymentStatus = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
-
-// Don't forget to export it:
-// export { ..., togglePaymentStatus }
 
 // Get Reports Data: /api/seller/reports
 export const getSellerReports = async (req, res) => {
@@ -365,11 +373,55 @@ export const createManualOrder = async (req, res) => {
       return res.json({ success: false, message: 'Customer name and phone are required' });
     }
 
+    // ✅ Validate and add prices to items
+    const validatedItems = [];
+    let calculatedAmount = 0;
+
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      
+      if (!product) {
+        return res.json({ 
+          success: false, 
+          message: `Product not found: ${item.product}` 
+        });
+      }
+
+      let itemPrice;
+      let itemOfferPrice;
+      
+      if (item.weight) {
+        const variant = product.weights?.find(w => w.weight === item.weight);
+        if (variant) {
+          itemPrice = variant.price;
+          itemOfferPrice = variant.offerPrice || variant.price;
+        } else {
+          itemPrice = product.price;
+          itemOfferPrice = product.offerPrice || product.price;
+        }
+      } else {
+        itemPrice = product.price;
+        itemOfferPrice = product.offerPrice || product.price;
+      }
+
+      calculatedAmount += itemOfferPrice * item.quantity;
+      
+      validatedItems.push({
+        product: item.product,
+        quantity: item.quantity,
+        weight: item.weight || null,
+        price: itemPrice,
+        offerPrice: itemOfferPrice,
+        name: product.name,
+        image: product.image[0]
+      });
+    }
+
     // Create new order - use guestAddress for manual orders
     const newOrder = new Order({
       userId: null, // Manual orders don't have a user account
-      items,
-      amount,
+      items: validatedItems, // Now includes prices
+      amount: calculatedAmount, // Use calculated amount
       address: null, // No address reference for manual orders
       guestAddress: address, // Store address as embedded object
       paymentType,

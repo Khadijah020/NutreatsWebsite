@@ -4,9 +4,11 @@ import { assets } from "../assets/assets";
 import logo from "../assets/logo.png";
 import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
+import CartDrawer from "../pages/CartDrawer";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const {
     user,
     setuser,
@@ -37,29 +39,153 @@ const Navbar = () => {
     if (searchQuery.length > 0) navigate("/products");
   }, [searchQuery]);
 
-  // 🔸 Function to scroll smoothly to the footer (contact section)
+  // Close mobile menu when cart opens
+  useEffect(() => {
+    if (isCartOpen) {
+      setOpen(false);
+    }
+  }, [isCartOpen]);
+
+  // Scroll to footer
   const scrollToFooter = () => {
     const footerSection = document.getElementById("contact-section");
     if (footerSection) {
       footerSection.scrollIntoView({ behavior: "smooth" });
     }
-    setOpen(false); // close mobile menu if open
+    setOpen(false);
   };
 
   return (
-    <nav className="flex items-center justify-between px-4 md:px-10 lg:px-16 py-2.5 bg-[#faf7f2] backdrop-blur-sm border-b border-gray-100 shadow-sm sticky top-0 z-50 transition-all">
-      {/* Logo */}
-      <NavLink to="/" onClick={() => setOpen(false)} className="flex items-center">
-        <img src={logo} alt="logo" className="w-24 md:w-32 h-auto" />
-      </NavLink>
+    <>
+      <nav className="flex items-center justify-between px-4 md:px-10 lg:px-16 py-2.5 bg-[#f3efe9] backdrop-blur-sm border-b border-gray-100 shadow-sm sticky top-0 z-50 transition-all">
+        
+        {/* Logo */}
+        <NavLink to="/" onClick={() => setOpen(false)} className="flex items-center">
+          <img src={logo} alt="logo" className="w-24 md:w-32 h-auto" />
+        </NavLink>
 
-      {/* Desktop Menu */}
-      <div className="hidden md:flex items-center gap-6 text-[15px]">
+        {/* Desktop Menu */}
+        <div className="hidden md:flex items-center gap-6 text-[15px]">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `font-medium transition duration-200 ${
+                isActive ? "text-[#EB8A14]" : "text-gray-700 hover:text-[#EB8A14]"
+              }`
+            }
+          >
+            Home
+          </NavLink>
+
+          <NavLink
+            to="/products"
+            className={({ isActive }) =>
+              `font-medium transition duration-200 ${
+                isActive ? "text-[#EB8A14]" : "text-gray-700 hover:text-[#EB8A14]"
+              }`
+            }
+          >
+            Products
+          </NavLink>
+
+          <button
+            onClick={scrollToFooter}
+            className="font-medium text-gray-700 hover:text-[#EB8A14] transition duration-200"
+          >
+            Contact
+          </button>
+
+          {/* Search Bar */}
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 border border-gray-200 rounded-full bg-[#faf7f2] focus-within:ring-1 focus-within:ring-[#EB8A14] transition-all duration-200">
+            <input
+              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchQuery || ""}
+              type="text"
+              placeholder="Search"
+              className="bg-transparent outline-none text-sm w-28 placeholder-gray-400"
+            />
+            <img src={assets.search_icon} alt="search" className="w-4 h-4 opacity-70" />
+          </div>
+
+          {/* Cart */}
+          <div
+            onClick={() => setIsCartOpen(true)}
+            className="relative cursor-pointer hover:opacity-80 transition"
+          >
+            <img src={assets.nav_cart_icon} alt="cart" className="w-5 opacity-80" />
+            <span className="absolute -top-2 -right-2 text-[10px] font-medium text-white bg-[#EB8A14] w-4 h-4 flex items-center justify-center rounded-full">
+              {getCartCount()}
+            </span>
+          </div>
+
+          {/* Auth */}
+          {!user ? (
+            <button
+              onClick={() => setShowUserLogin(true)}
+              className="px-4 py-1.5 rounded-full bg-[#EB8A14] text-white text-sm font-medium hover:bg-[#96580D] transition"
+            >
+              Login
+            </button>
+          ) : (
+            <div className="relative group">
+              <img src={assets.profile_icon} className="w-8 cursor-pointer" alt="profile" />
+              <ul className="hidden group-hover:block absolute top-8 right-0 bg-white border border-gray-100 shadow-md rounded-md py-1 w-32 text-sm z-50">
+                <li
+                  onClick={() => navigate("my-orders")}
+                  className="px-3 py-1.5 hover:bg-[#EB8A14] hover:text-white cursor-pointer"
+                >
+                  My Orders
+                </li>
+                <li
+                  onClick={logout}
+                  className="px-3 py-1.5 hover:bg-[#EB8A14] hover:text-white cursor-pointer"
+                >
+                  Log Out
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Menu Icon */}
+        <div className="flex items-center gap-3 md:hidden">
+          <div onClick={() => setIsCartOpen(true)} className="relative cursor-pointer">
+            <img src={assets.nav_cart_icon} alt="cart" className="w-5 opacity-80" />
+            <span className="absolute -top-2 -right-2 text-[9px] text-white bg-[#EB8A14] w-[15px] h-[15px] flex items-center justify-center rounded-full font-medium">
+              {getCartCount()}
+            </span>
+          </div>
+
+          <button onClick={() => setOpen(!open)} aria-label="Menu">
+            <img src={assets.menu_icon} alt="menu" className="w-5" />
+          </button>
+        </div>
+      </nav>
+
+      {/* ---------------- MOBILE DRAWER (ALWAYS MOUNTED) ---------------- */}
+
+      {/* Backdrop */}
+      <div
+        onClick={() => setOpen(false)}
+        className={`fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden transition-opacity duration-300
+        ${open ? "opacity-50 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        style={{ top: "58px" }}
+      ></div>
+
+      {/* Drawer */}
+      <div
+        className={`fixed top-[58px] right-0 w-[75%] max-w-[300px] h-[calc(100vh-58px)]
+        bg-[#faf7f2] shadow-2xl flex flex-col gap-1 px-5 py-4 text-gray-700 font-medium text-sm 
+        md:hidden z-50 overflow-y-auto transform transition-transform duration-300 ease-in-out
+        ${open ? "translate-x-0" : "translate-x-full"}`}
+      >
         <NavLink
           to="/"
+          onClick={() => setOpen(false)}
           className={({ isActive }) =>
-            `font-medium transition duration-200 ${
-              isActive ? "text-[#AD3A24]" : "text-gray-700 hover:text-[#AD3A24]"}`
+            `py-2.5 px-3 rounded-lg transition-colors ${
+              isActive ? "bg-[#EB8A14] text-white" : "hover:bg-[#bfd9bd]/30"
+            }`
           }
         >
           Home
@@ -67,125 +193,65 @@ const Navbar = () => {
 
         <NavLink
           to="/products"
+          onClick={() => setOpen(false)}
           className={({ isActive }) =>
-            `font-medium transition duration-200 ${
-              isActive ? "text-[#AD3A24]" : "text-gray-700 hover:text-[#AD3A24]"}`
+            `py-2.5 px-3 rounded-lg transition-colors ${
+              isActive ? "bg-[#EB8A14] text-white" : "hover:bg-[#bfd9bd]/30"
+            }`
           }
         >
           Products
         </NavLink>
 
-        {/* 🔸 Contact link scrolls to footer */}
+        {user && (
+          <NavLink
+            to="/my-orders"
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `py-2.5 px-3 rounded-lg transition-colors ${
+                isActive ? "bg-[#EB8A14] text-white" : "hover:bg-[#bfd9bd]/30"
+              }`
+            }
+          >
+            My Orders
+          </NavLink>
+        )}
+
         <button
           onClick={scrollToFooter}
-          className="font-medium text-gray-700 hover:text-[#AD3A24] transition duration-200"
+          className="text-left py-2.5 px-3 rounded-lg hover:bg-[#bfd9bd]/30 transition-colors"
         >
           Contact
         </button>
 
-        {/* Search Bar */}
-        <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 border border-gray-200 rounded-full bg-[#faf7f2] focus-within:ring-1 focus-within:ring-[#AD3A24] transition-all duration-200">
-          <input
-            onChange={(e) => setSearchQuery(e.target.value)}
-            value={searchQuery || ""}
-            type="text"
-            placeholder="Search"
-            className="bg-transparent outline-none text-sm w-28 placeholder-gray-400"
-          />
-          <img src={assets.search_icon} alt="search" className="w-4 h-4 opacity-70" />
-        </div>
+        <div className="border-t border-gray-200 my-3"></div>
 
-        {/* Cart */}
-        <div
-          onClick={() => navigate("/cart")}
-          className="relative cursor-pointer hover:opacity-80 transition"
-        >
-          <img src={assets.nav_cart_icon} alt="cart" className="w-5 opacity-80" />
-          <span className="absolute -top-2 -right-2 text-[10px] font-medium text-white bg-[#AD3A24] w-4 h-4 flex items-center justify-center rounded-full">
-            {getCartCount()}
-          </span>
-        </div>
-
-        {/* Auth */}
         {!user ? (
           <button
-            onClick={() => setShowUserLogin(true)}
-            className="px-4 py-1.5 rounded-full bg-[#AD3A24] text-white text-sm font-medium hover:opacity-90 transition"
+            onClick={() => {
+              setOpen(false);
+              setShowUserLogin(true);
+            }}
+            className="w-full bg-[#EB8A14] text-white py-2.5 rounded-lg hover:bg-[#96580D] transition font-semibold"
           >
             Login
           </button>
         ) : (
-          <div className="relative group">
-            <img src={assets.profile_icon} className="w-8 cursor-pointer" alt="profile" />
-            <ul className="hidden group-hover:block absolute top-8 right-0 bg-white border border-gray-100 shadow-md rounded-md py-1 w-32 text-sm z-50">
-              <li
-                onClick={() => navigate("my-orders")}
-                className="px-3 py-1.5 hover:bg-[#AD3A24] hover:text-white cursor-pointer"
-              >
-                My Orders
-              </li>
-              <li
-                onClick={logout}
-                className="px-3 py-1.5 hover:bg-[#AD3A24] hover:text-white cursor-pointer"
-              >
-                Log Out
-              </li>
-            </ul>
-          </div>
+          <button
+            onClick={() => {
+              logout();
+              setOpen(false);
+            }}
+            className="w-full bg-[#EB8A14] text-white py-2.5 rounded-lg hover:bg-[#96580D] transition font-semibold"
+          >
+            Log Out
+          </button>
         )}
       </div>
 
-      {/* Mobile Menu Icon */}
-      <div className="flex items-center gap-3 md:hidden">
-        <div onClick={() => navigate("/cart")} className="relative cursor-pointer">
-          <img src={assets.nav_cart_icon} alt="cart" className="w-5 opacity-80" />
-          <span className="absolute -top-2 -right-2 text-[9px] text-white bg-[#AD3A24] w-[15px] h-[15px] flex items-center justify-center rounded-full">
-            {getCartCount()}
-          </span>
-        </div>
-        <button onClick={() => setOpen(!open)} aria-label="Menu" className="focus:outline-none">
-          <img src={assets.menu_icon} alt="menu" className="w-5" />
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {open && (
-        <div className="absolute top-[58px] left-0 w-full bg-white shadow-md flex flex-col items-start gap-2 px-5 py-3 text-gray-700 font-medium text-sm border-t border-gray-100 md:hidden z-40">
-          <NavLink to="/" onClick={() => setOpen(false)}>
-            Home
-          </NavLink>
-          <NavLink to="/products" onClick={() => setOpen(false)}>
-            Products
-          </NavLink>
-          {user && (
-            <NavLink to="/my-orders" onClick={() => setOpen(false)}>
-              My Orders
-            </NavLink>
-          )}
-
-          {/* 🔸 Mobile “Contact” scrolls down too */}
-          <button onClick={scrollToFooter} className="text-left w-full">
-            Contact
-          </button>
-
-          {!user ? (
-            <button
-              onClick={() => {
-                setOpen(false);
-                setShowUserLogin(true);
-              }}
-              className="w-full mt-2 bg-[#AD3A24] text-white py-1.5 rounded-full"
-            >
-              Login
-            </button>
-          ) : (
-            <button onClick={logout} className="w-full mt-2 bg-[#AD3A24] text-white py-1.5 rounded-full">
-              Log Out
-            </button>
-          )}
-        </div>
-      )}
-    </nav>
+      {/* Cart Drawer */}
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+    </>
   );
 };
 

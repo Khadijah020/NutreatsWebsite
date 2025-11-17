@@ -1,9 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAppContext } from "../context/AppContext";
 import { useParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
-import { ChevronRight, ShoppingCart, Truck, Shield, ZoomIn, CheckCircle2 } from "lucide-react";
+import { ChevronRight, ShoppingCart, Truck, Shield, ZoomIn, CheckCircle2, ChevronLeft, ChevronRight as RightArrow } from "lucide-react";
 import SEO from "../components/SEO";
+import { ArrowLeft } from "lucide-react";
+
+// ✅ Fisher-Yates shuffle algorithm for randomizing array
+const shuffleArray = (array) => {
+  const shuffled = [...array]; // Create a copy to avoid mutating original
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
 const ProductDetails = () => {
   const {
@@ -17,13 +28,50 @@ const ProductDetails = () => {
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [recentlyViewedProducts, setRecentlyViewedProducts] = useState([]);
   const [thumbnail, setThumbnail] = useState(0);
   const [showZoom, setShowZoom] = useState(false);
   const [selectedWeight, setSelectedWeight] = useState(null);
   const [toastMessage, setToastMessage] = useState({ show: false, type: '', text: '' });
   const [categoryData, setCategoryData] = useState(null);
+  
+  
   const { slug } = useParams();
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+
+  // Add product to recently viewed
+  const addToRecentlyViewed = (productData) => {
+    if (!productData) return;
+
+    // Get existing recently viewed from localStorage
+    let recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+    
+    // Remove the current product if it already exists (to avoid duplicates)
+    recentlyViewed = recentlyViewed.filter(id => id !== productData._id);
+    
+    // Add current product to the beginning
+    recentlyViewed.unshift(productData._id);
+    
+    // Keep only last 10 products
+    recentlyViewed = recentlyViewed.slice(0, 10);
+    
+    // Save back to localStorage
+    localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
+  };
+
+  // Get recently viewed products
+  const getRecentlyViewed = (currentProductId) => {
+    const recentlyViewedIds = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+    
+    // Filter out current product and get product objects
+    const recentProducts = recentlyViewedIds
+      .filter(id => id !== currentProductId)
+      .map(id => products.find(p => p._id === id))
+      .filter(p => p && p.inStock) // Only show in-stock products
+      .slice(0, 5); // Show only 5 most recent products
+    
+    setRecentlyViewedProducts(recentProducts);
+  };
 
   useEffect(() => {
     const found = products.find((item) => item.slug === slug);
@@ -32,14 +80,22 @@ const ProductDetails = () => {
       setProduct(found);
       if (found.weights?.length > 0) setSelectedWeight(found.weights[0]);
 
-      const related = products
-        .filter(
-          (item) => item.category === found.category && item.slug !== found.slug
-        )
-        .slice(0, 4);
-      setRelatedProducts(related);
+      // ✅ GET ALL RELATED PRODUCTS, SHUFFLE, THEN TAKE 4
+      const relatedInCategory = products.filter(
+        (item) => item.category === found.category && item.slug !== found.slug && item.inStock
+      );
+      
+      // Randomize and take 4
+      const randomRelated = shuffleArray(relatedInCategory).slice(0, 4);
+      setRelatedProducts(randomRelated);
 
       fetchCategoryData(found.category);
+      
+      // Add to recently viewed
+      addToRecentlyViewed(found);
+      
+      // Get recently viewed products
+      getRecentlyViewed(found._id);
     }
   }, [slug, products]);
 
@@ -64,7 +120,7 @@ const ProductDetails = () => {
   };
 
   if (!product)
-    return <p className="text-center py-10 text-gray-600">Loading...</p>;
+    return <p className="text-center py-10 text-[#785427]">Loading...</p>;
 
   const currentPrice = selectedWeight ? selectedWeight.price : product.price;
   const currentOfferPrice = selectedWeight
@@ -185,18 +241,18 @@ const ProductDetails = () => {
         schema={combinedSchema}
       />
 
-      {/* Cute Toast Notification */}
+      {/* Toast Notification */}
       {toastMessage.show && (
         <div className="fixed top-24 right-6 z-50 animate-[slideIn_0.3s_ease-out]">
-          <div className="bg-white shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-3 border-2 border-[#D4A574] min-w-[280px]">
-            <div className="bg-[#F5EBE0] p-2 rounded-full">
-              <CheckCircle2 className="text-[#D4A574] w-6 h-6" />
+          <div className="bg-white shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-3 border-2 border-[#EB8A14] min-w-[280px]">
+            <div className="bg-[#bfd9bde0] p-2 rounded-full border border-[#EB8A14]">
+              <CheckCircle2 className="text-[#0a6134] w-6 h-6" />
             </div>
             <div>
-              <p className="text-gray-800 font-semibold text-sm">
+              <p className="text-[#0a6134] font-semibold text-sm">
                 {toastMessage.text}
               </p>
-              <p className="text-gray-500 text-xs mt-0.5">
+              <p className="text-[#785427] text-xs mt-0.5">
                 {toastMessage.type === 'add' && 'Item added successfully'}
                 {toastMessage.type === 'update' && 'Quantity updated'}
                 {toastMessage.type === 'remove' && 'Item removed'}
@@ -206,7 +262,7 @@ const ProductDetails = () => {
         </div>
       )}
 
-      <style >{`
+      <style>{`
         @keyframes slideIn {
           from {
             transform: translateX(100%);
@@ -217,42 +273,55 @@ const ProductDetails = () => {
             opacity: 1;
           }
         }
+        
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .hide-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
       `}</style>
 
-      <div className="bg-[#faf7f2] min-h-screen px-4 sm:px-6 py-10">
+      <div className="bg-white min-h-screen px-4 sm:px-6 py-10 mt-16">
+        <button
+  onClick={() => navigate(-1)}
+  className="flex items-center gap-2 text-[#785427] hover:text-[#EB8A14] font-semibold mb-4 transition-colors"
+>
+  <ArrowLeft size={20} />
+  Back
+</button>
         {/* Breadcrumb */}
         <nav 
-          className="flex items-center text-gray-600 text-sm mb-6 max-w-6xl mx-auto flex-wrap gap-1"
+          className="flex items-center text-[#785427] text-sm mb-6 max-w-6xl mx-auto flex-wrap gap-1"
           aria-label="Breadcrumb"
         >
           <span
-            className="cursor-pointer hover:text-[#AD3A24] transition"
+            className="cursor-pointer hover:text-[#EB8A14] transition"
             onClick={() => navigate("/")}
           >
             Home
           </span>
           <ChevronRight size={16} />
           <span
-            className="cursor-pointer hover:text-[#AD3A24] transition"
+            className="cursor-pointer hover:text-[#EB8A14] transition"
             onClick={() => navigate(`/${product.category.toLowerCase()}`)}
           >
             {categoryData?.name || product.category}
           </span>
           <ChevronRight size={16} />
-          <span className="text-[#AD3A24] font-semibold">{product.name}</span>
+          <span className="text-[#EB8A14] font-semibold">{product.name}</span>
         </nav>
 
         {/* Product Card */}
-        <article className="bg-white shadow-xl rounded-3xl max-w-6xl mx-auto overflow-hidden">
-          {/* Inner card */}
-          <div className="bg-[#ecd4d0] rounded-2xl p-6 md:p-10 flex flex-col md:flex-row gap-10 relative">
-            {/* Subtle decorative elements on inner card */}
-            <div className="absolute top-3 right-3 w-12 h-12 border-t border-r border-amber-200/40 rounded-tr-2xl"></div>
-            <div className="absolute bottom-3 left-3 w-12 h-12 border-b border-l border-amber-200/40 rounded-bl-2xl"></div>
-
+        <article className="bg-[#bfd9bde0] rounded-2xl p-1 shadow-xl border-4 border-[#EB8A14] max-w-6xl mx-auto">
+          <div className="bg-[#bfd9bde0] rounded-xl p-6 md:p-10 flex flex-col md:flex-row gap-10">
             {/* Left: Image Gallery */}
-            <div className="flex-1 flex flex-col items-center relative z-10">
-              <div className="relative w-full max-w-sm h-80 bg-white/80 rounded-2xl flex items-center justify-center overflow-hidden shadow-md border border-amber-100/50">
+            <div className="flex-1 flex flex-col items-center">
+              <div className="relative w-full max-w-sm h-80 bg-white rounded-2xl flex items-center justify-center overflow-hidden border-2 border-[#EB8A14]">
                 <img
                   src={product.image?.[thumbnail] ?? product.image?.[0]}
                   alt={`${product.name} - ${categoryData?.name || product.category}`}
@@ -261,10 +330,10 @@ const ProductDetails = () => {
                 />
                 <button
                   onClick={() => setShowZoom(true)}
-                  className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow hover:scale-105 transition border border-amber-200/50"
+                  className="absolute top-4 right-4 bg-white p-2 rounded-full shadow hover:scale-105 transition border-2 border-[#EB8A14]"
                   aria-label="Zoom image"
                 >
-                  <ZoomIn className="text-[#AD3A24] w-5 h-5" />
+                  <ZoomIn className="text-[#EB8A14] w-5 h-5" />
                 </button>
               </div>
 
@@ -278,8 +347,8 @@ const ProductDetails = () => {
                       onClick={() => setThumbnail(index)}
                       className={`w-20 h-20 rounded-xl border-2 object-cover cursor-pointer transition-all ${
                         thumbnail === index
-                          ? "border-[#AD3A24] shadow-md scale-105"
-                          : "border-amber-200/60 hover:border-[#AD3A24]/60"
+                          ? "border-[#EB8A14] shadow-md scale-105"
+                          : "border-[#EB8A14] hover:border-[#EB8A14]"
                       }`}
                       loading="lazy"
                     />
@@ -289,11 +358,11 @@ const ProductDetails = () => {
             </div>
 
             {/* Right: Product Info */}
-            <div className="flex-1 flex flex-col justify-between relative z-10">
+            <div className="flex-1 flex flex-col justify-between">
               <div>
-                <h1 className="text-3xl font-bold mb-3 text-[#8B2E1A]">{product.name}</h1>
+                <h1 className="text-3xl font-bold mb-3 text-[#0a6134]">{product.name}</h1>
                 <div
-                  className="text-gray-700 leading-relaxed mb-6 prose prose-sm max-w-none"
+                  className="text-[#785427] leading-relaxed mb-6 prose prose-sm max-w-none"
                   dangerouslySetInnerHTML={{
                     __html: (() => {
                       const desc = product.description;
@@ -314,16 +383,16 @@ const ProductDetails = () => {
                 {/* Weight Selector */}
                 {product.weights?.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="font-semibold text-lg mb-2 text-[#8B2E1A]">Select Weight</h3>
+                    <h3 className="font-semibold text-lg mb-2 text-[#0a6134]">Select Weight</h3>
                     <div className="flex flex-wrap gap-3">
                       {product.weights.map((w) => (
                         <button
                           key={w._id}
                           onClick={() => setSelectedWeight(w)}
-                          className={`px-4 py-2 rounded-full border-2 font-medium transition ${
+                          className={`px-4 py-2 rounded-full border-2 cursor-pointer font-medium text-lg transition ${
                             selectedWeight?.weight === w.weight
-                              ? "bg-[#AD3A24] text-white border-[#AD3A24] shadow-md"
-                              : "border-amber-300/60 text-gray-700 hover:border-[#AD3A24] bg-white/50"
+                              ? "bg-[#EB8A14] text-white border-[#EB8A14] shadow-md"
+                              : "border-[#EB8A14] text-[#0a6134] hover:border-[#EB8A14] bg-[#bfd9bde0]"
                           }`}
                         >
                           {w.weight}
@@ -335,17 +404,17 @@ const ProductDetails = () => {
 
                 {/* Price Section */}
                 <div className="flex items-center gap-4 py-4">
-                  <span className="text-5xl font-extrabold text-[#AD3A24]">
+                  <span className="text-4xl font-extrabold text-[#96580D]">
                     {currency}
                     {currentOfferPrice}
                   </span>
                   {discount > 0 && (
                     <>
-                      <span className="text-2xl text-gray-500 line-through">
+                      <span className="text-2xl text-[#785427] line-through">
                         {currency}
                         {currentPrice}
                       </span>
-                      <span className="text-md bg-amber-100 text-[#8B2E1A] px-3 py-1 rounded-full font-semibold border border-amber-200">
+                      <span className="text-md bg-[#bfd9bde0] text-[#96580D] px-3 py-1 rounded-full font-semibold border-2 border-[#EB8A14]">
                         Save {discount}%
                       </span>
                     </>
@@ -356,20 +425,20 @@ const ProductDetails = () => {
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
                   {isInCart ? (
                     <>
-                      <div className="flex items-center justify-between border-2 border-amber-200/60 rounded-xl w-full sm:w-1/2 bg-white/50">
+                      <div className="flex items-center justify-between border-2 border-[#EB8A14] rounded-xl w-full sm:w-1/2 bg-[#bfd9bde0]">
                         <button
                           onClick={() => handleUpdateCart(cartItems[cartKey] - 1)}
-                          className="px-4 py-2 text-lg font-semibold text-[#AD3A24] hover:text-[#8B2E1A]"
+                          className="px-4 py-2 text-lg font-semibold text-[#EB8A14] hover:text-[#EB8A14]"
                           aria-label="Decrease quantity"
                         >
                           −
                         </button>
-                        <span className="px-4 py-2 font-semibold text-gray-800 border-x-2 border-amber-200/60">
+                        <span className="px-4 py-2 font-semibold text-[#0a6134] border-x-2 border-[#EB8A14]">
                           {cartItems[cartKey]}
                         </span>
                         <button
                           onClick={() => handleUpdateCart(cartItems[cartKey] + 1)}
-                          className="px-4 py-2 text-lg font-semibold text-[#AD3A24] hover:text-[#8B2E1A]"
+                          className="px-4 py-2 text-lg font-semibold text-[#EB8A14] hover:text-[#EB8A14]"
                           aria-label="Increase quantity"
                         >
                           +
@@ -379,7 +448,7 @@ const ProductDetails = () => {
                         onClick={() => {
                           navigate("/cart");
                         }}
-                        className="bg-[#8B2E1A] hover:bg-[#AD3A24] text-white px-6 py-3 rounded-xl font-semibold transition shadow-md"
+                        className="bg-[#EB8A14] hover:bg-[#EB8A14] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-[#EB8A14]"
                       >
                         Buy Now
                       </button>
@@ -388,7 +457,7 @@ const ProductDetails = () => {
                     <>
                       <button
                         onClick={handleAddToCart}
-                        className="flex items-center justify-center gap-2 bg-[#AD3A24] hover:bg-[#8B2E1A] text-white px-6 py-3 rounded-xl font-semibold transition shadow-md"
+                        className="flex items-center justify-center gap-2 bg-[#EB8A14] hover:bg-[#EB8A14] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-[#EB8A14]"
                       >
                         <ShoppingCart size={20} />
                         Add to Cart
@@ -398,7 +467,7 @@ const ProductDetails = () => {
                           handleAddToCart();
                           navigate("/cart");
                         }}
-                        className="bg-[#8B2E1A] hover:bg-[#AD3A24] text-white px-6 py-3 rounded-xl font-semibold transition shadow-md"
+                        className="bg-[#EB8A14] hover:bg-[#EB8A14] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-[#EB8A14]"
                       >
                         Buy Now
                       </button>
@@ -408,40 +477,73 @@ const ProductDetails = () => {
               </div>
 
               {/* Guarantee Icons */}
-              {/* <div className="mt-10 grid grid-cols-3 gap-6 text-gray-700">
+              <div className="mt-10 grid grid-cols-3 gap-6 text-[#785427]">
                 <div className="flex flex-col items-center">
-                  <div className="bg-white/50 p-3 rounded-full border border-amber-200/50 mb-2">
-                    <Truck size={28} className="text-[#AD3A24]" />
+                  <div className="bg-[#bfd9bde0] p-3 rounded-full border-2 border-[#EB8A14] mb-2">
+                    <Truck size={28} className="text-[#EB8A14]" />
                   </div>
                   <span className="text-sm font-medium text-center">Fast Delivery</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="bg-white/50 p-3 rounded-full border border-amber-200/50 mb-2">
-                    <Shield size={28} className="text-[#AD3A24]" />
+                  <div className="bg-[#bfd9bde0] p-3 rounded-full border-2 border-[#EB8A14] mb-2">
+                    <Shield size={28} className="text-[#EB8A14]" />
                   </div>
                   <span className="text-sm font-medium text-center">Secure Packaging</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="bg-white/50 p-3 rounded-full border border-amber-200/50 mb-2">
-                    <ShoppingCart size={28} className="text-[#AD3A24]" />
+                  <div className="bg-[#bfd9bde0] p-3 rounded-full border-2 border-[#EB8A14] mb-2">
+                    <ShoppingCart size={28} className="text-[#EB8A14]" />
                   </div>
                   <span className="text-sm font-medium text-center">Trusted Quality</span>
                 </div>
-              </div> */}
+              </div>
             </div>
           </div>
         </article>
 
-        {/* Related Products */}
+        {/* Related Products - LARGER CARDS */}
         {relatedProducts.length > 0 && (
           <section className="mt-16 max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6 text-[#8B2E1A] text-center">
+            <h2 className="text-3xl md:text-4xl font-serif tracking-tight mb-6 text-[#0a6134] text-center">
               You May Also Like
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {relatedProducts.map((related) => (
-                <ProductCard key={related._id} product={related} />
+                <div 
+                  key={related._id} 
+                  className="transform transition-all duration-300 hover:scale-105"
+                  style={{ minHeight: '320px' }}
+                >
+                  <ProductCard 
+                    product={related} 
+                    className="h-full"
+                    imageClassName="h-48 md:h-56 object-contain"
+                    contentClassName="p-4"
+                  />
+                </div>
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* Recently Viewed Products - NO SCROLL */}
+        {recentlyViewedProducts.length > 0 && (
+          <section className="mt-16 max-w-6xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-serif tracking-tight text-[#0a6134] text-center mb-6">
+              Recently Viewed
+            </h2>
+            
+            <div className="py-6">
+              <div className="flex gap-4 justify-center flex-wrap">
+                {recentlyViewedProducts.map((viewed) => (
+                  <div 
+                    key={viewed._id} 
+                    className="w-53 transform transition-all duration-300 hover:scale-105"
+                  >
+                    <ProductCard product={viewed} />
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         )}
@@ -466,7 +568,7 @@ const ProductDetails = () => {
               />
               <button
                 onClick={() => setShowZoom(false)}
-                className="absolute top-3 right-3 bg-white/90 p-2 rounded-full hover:bg-white transition"
+                className="absolute top-3 right-3 bg-[#bfd9bde0] p-2 rounded-full hover:bg-[#bfd9bde0] transition text-[#EB8A14] hover:text-[#EB8A14] border-2 border-[#EB8A14]"
                 aria-label="Close zoom"
               >
                 ✕

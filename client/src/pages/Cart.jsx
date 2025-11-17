@@ -4,10 +4,9 @@ import { assets } from "../assets/assets";
 import toast from "react-hot-toast";
 import SEO from "../components/SEO";
 import { Helmet } from "react-helmet-async";
-import { ChevronRight, ShoppingCart, MapPin, CreditCard, Shield, Truck } from "lucide-react";
-
+import { ChevronRight, ShoppingCart, ArrowRight, Plus, Minus, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 const Cart = () => {
-  const [showAddress, setShowAddress] = useState(false);
   const {
     products,
     setCartItems,
@@ -23,128 +22,58 @@ const Cart = () => {
   } = useAppContext();
 
   const [cartArray, setCartArray] = useState([]);
-  const [addresses, setAddresses] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState();
-  const [paymentOption, setPaymentOption] = useState("COD");
-
+  
   const getCart = () => {
-    const tempArray = [];
-    const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
-    
-    for (const key in cartItems) {
-      if (key.includes('_')) {
-        const [productId, weight] = key.split('_');
-        const product = products.find((item) => item._id === productId);
+  const tempArray = [];
+  const cartMeta = JSON.parse(localStorage.getItem('cartMeta') || '{}');
+  
+  for (const key in cartItems) {
+    if (key.includes('_')) {
+      const [productId, weight] = key.split('_');
+      const product = products.find((item) => item._id === productId);
+      
+      if (product) {
+        // Find the weight variant from the product's current weights array
+        const weightVariant = product.weights?.find(w => w.weight === weight);
         
-        if (product && cartMeta[key]) {
-          const weightData = cartMeta[key];
+        if (weightVariant) {
+          // Use FRESH prices from product data, not stored prices
           tempArray.push({
             ...product,
             cartKey: key,
             quantity: cartItems[key],
             selectedWeight: weight,
-            displayPrice: weightData.price,
-            displayOfferPrice: weightData.offerPrice
-          });
-        }
-      } else {
-        const product = products.find((item) => item._id === key);
-        if (product) {
-          tempArray.push({
-            ...product,
-            cartKey: key,
-            quantity: cartItems[key],
-            selectedWeight: null,
-            displayPrice: product.price,
-            displayOfferPrice: product.offerPrice
+            displayPrice: weightVariant.price,
+            displayOfferPrice: weightVariant.offerPrice
           });
         }
       }
-    }
-    setCartArray(tempArray);
-  };
-
-  const getUserAddress = async () => {
-    try {
-      const { data } = await axios.get("/api/address/get");
-      if (data.success) {
-        setAddresses(data.addresses);
-        if (data.addresses.length > 0) setSelectedAddress(data.addresses[0]);
-      } else toast.error(data.message);
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
-  const placeOrder = async () => {
-    try {
-      if (!selectedAddress) return toast.error("Please select an address");
-
-      const items = cartArray.map((item) => ({
-        product: item._id,
-        quantity: item.quantity,
-        weight: item.selectedWeight || null,
-      }));
-
-      if (!user) {
-        const { data } = await axios.post("/api/order/cod", {
-          items,
-          address: selectedAddress,
+    } else {
+      const product = products.find((item) => item._id === key);
+      if (product) {
+        // Use FRESH prices from product data
+        tempArray.push({
+          ...product,
+          cartKey: key,
+          quantity: cartItems[key],
+          selectedWeight: null,
+          displayPrice: product.price,
+          displayOfferPrice: product.offerPrice
         });
-
-        if (data.success) {
-          toast.success("Order placed successfully");
-          setCartItems({});
-          localStorage.removeItem("guestAddress");
-          localStorage.removeItem("cartMeta");
-        } else {
-          toast.error(data.message);
-        }
-        return;
-      }
-
-      if (paymentOption === "COD") {
-        const { data } = await axios.post("/api/order/cod", {
-          userId: user._id,
-          items,
-          address: selectedAddress._id,
-        });
-        if (data.success) {
-          toast.success(data.message);
-          setCartItems({});
-          localStorage.removeItem("cartMeta");
-          navigate("/my-orders");
-        } else toast.error(data.message);
-      }
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
-  useEffect(() => {
-    if (!user) {
-      const savedAddress = localStorage.getItem("guestAddress");
-      if (savedAddress) {
-        const parsed = JSON.parse(savedAddress);
-        setAddresses([parsed]);
-        setSelectedAddress(parsed);
       }
     }
-  }, [user]);
+  }
+  setCartArray(tempArray);
+};
 
   useEffect(() => {
     if (products.length > 0 && cartItems) getCart();
   }, [products, cartItems]);
 
-  useEffect(() => {
-    if (user) getUserAddress();
-  }, [user]);
-
   const cartSubtotal = cartArray.reduce(
     (sum, item) => sum + item.displayOfferPrice * item.quantity,
     0
   );
-  const cartTotal = (cartSubtotal * 1.02).toFixed(2);
 
   const cartStructuredData = {
     "@context": "https://schema.org",
@@ -207,102 +136,121 @@ const Cart = () => {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <div className="min-h-screen bg-[#faf7f2] mt-16 px-4 sm:px-6 pb-20">
+      <div className="min-h-screen bg-[#f8faf7] mt-16 px-4 sm:px-6 pt-5">
+        <button
+  onClick={() => navigate(-1)}
+  className="flex items-center gap-2 text-[#785427] hover:text-[#EB8A14] font-semibold mt-4 mb-4 transition-colors"
+>
+  <ArrowLeft size={20} />
+  Back
+</button>
         {/* Breadcrumb */}
-        <nav aria-label="Breadcrumb" className="py-4 max-w-7xl mx-auto">
-          <ol className="flex items-center space-x-2 text-sm text-gray-600">
+        <nav aria-label="Breadcrumb" className="py-6 max-w-5xl mx-auto">
+          <ol className="flex items-center space-x-2 text-sm text-[#785427]">
             <li>
-              <a href="/" className="hover:text-[#AD3A24] transition">Home</a>
+              <a href="/" className="hover:text-[#EB8A14] transition">Home</a>
             </li>
             <li><ChevronRight size={16} /></li>
-            <li aria-current="page" className="text-[#AD3A24] font-medium">
+            <li aria-current="page" className="text-[#EB8A14] font-medium">
               Shopping Cart
             </li>
           </ol>
         </nav>
 
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
-          {/* LEFT: CART ITEMS */}
-          <main className="flex-1" role="main">
-            <div className="flex items-center gap-3 mb-6">
-              <ShoppingCart className="w-7 h-7 text-[#AD3A24]" />
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#8B2E1A]">
+        <div className="max-w-5xl mx-auto">
+          {/* CART ITEMS */}
+          <main role="main">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-gradient-to-r from-[#EB8A14] to-[#EB8A14] p-2 rounded-xl">
+                <ShoppingCart className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0a6134]">
                 Shopping Cart
-                <span className="text-base text-gray-600 ml-2 font-normal">
+                <span className="text-base text-[#785427] ml-2 font-normal">
                   ({getCartCount()} item{getCartCount() !== 1 ? 's' : ''})
                 </span>
               </h1>
             </div>
 
             {cartArray.length === 0 ? (
-              <div className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/30 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-amber-300/30 rounded-tl-3xl"></div>
-                <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-amber-300/30 rounded-br-3xl"></div>
+              <div className="group relative bg-[#bfd9bde0] rounded-2xl p-8 shadow-xl text-center border-4 border-[#EB8A14] hover:shadow-2xl transition-all duration-500">
+                {/* Decorative corners */}
+                <div className="absolute top-3 left-3 w-12 h-12 border-t-2 border-l-2 border-[#EB8A14] rounded-tl-xl" />
+                <div className="absolute bottom-3 right-3 w-12 h-12 border-b-2 border-r-2 border-[#EB8A14] rounded-br-xl" />
                 
-                <div className="bg-[#ecd4d0] rounded-2xl p-8 text-center relative">
-                  <div className="absolute top-2 right-2 w-10 h-10 border-t border-r border-amber-200/40 rounded-tr-xl"></div>
-                  <div className="absolute bottom-2 left-2 w-10 h-10 border-b border-l border-amber-200/40 rounded-bl-xl"></div>
-                  
-                  <ShoppingCart className="w-16 h-16 text-[#AD3A24]/30 mx-auto mb-4" />
-                  <h2 className="text-xl font-semibold text-[#8B2E1A] mb-3">Your cart is empty</h2>
-                  <p className="text-gray-600 mb-6">Add some delicious products to get started!</p>
-                  <a
-                    href="/products"
-                    className="inline-block bg-[#AD3A24] hover:bg-[#8B2E1A] text-white font-medium px-6 py-3 rounded-full transition shadow-md"
-                  >
-                    Start Shopping
-                  </a>
-                </div>
+                <ShoppingCart className="w-20 h-20 text-[#EB8A14]/30 mx-auto mb-6" />
+                <h2 className="text-2xl font-bold text-[#0a6134] mb-4">Your cart is empty</h2>
+                <p className="text-[#785427] mb-8 max-w-md mx-auto">
+                  Discover our premium collection of spices and add some flavor to your cart!
+                </p>
+                <a
+                  href="/products"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-[#EB8A14] to-[#EB8A14] hover:from-[#EB8A14] hover:to-[#EB8A14] text-white font-semibold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-[#EB8A14]"
+                >
+                  Start Shopping
+                </a>
               </div>
             ) : (
               <>
-                <section className="space-y-4" aria-label="Cart items">
+                <section className="space-y-6 mb-8" aria-label="Cart items">
                   {cartArray.map((product, index) => (
                     <article
                       key={index}
-                      className="bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-2xl p-1 border border-amber-200/20 relative overflow-hidden hover:shadow-lg transition"
+                      className="group relative bg-[#bfd9bde0] rounded-2xl p-1 shadow-lg hover:shadow-2xl transition-all duration-500 border-4 border-[#EB8A14]"
                     >
-                      <div className="bg-[#ecd4d0] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-start sm:items-center gap-4 w-full sm:w-auto">
+                      {/* Subtle decorative corners */}
+                      <div className="absolute top-2 left-2 w-8 h-8 border-t border-l border-[#EB8A14] rounded-tl-xl" />
+                      <div className="absolute bottom-2 right-2 w-8 h-8 border-b border-r border-[#EB8A14] rounded-br-xl" />
+                      
+                      <div className="bg-[#c2dfbfe0] rounded-xl p-6 flex flex-col sm:flex-row gap-6">
+                        {/* Product Image */}
+                        <div className="flex-shrink-0">
                           <a
                             href={`/${product.category.toLowerCase()}/${product.slug}`}
-                            className="cursor-pointer w-20 h-20 sm:w-24 sm:h-24 border border-amber-200/50 rounded-xl overflow-hidden flex items-center justify-center bg-white/80 hover:scale-105 transition"
+                            className="block w-24 h-24 sm:w-28 sm:h-28 border-2 border-[#EB8A14] rounded-xl overflow-hidden bg-white hover:scale-105 transition-transform duration-300 group/image"
                             aria-label={`View ${product.name}`}
                           >
                             <img
                               src={product.image[0]}
                               alt={product.name}
-                              className="object-cover w-full h-full"
+                              className="w-full h-full object-cover group-hover/image:scale-110 transition-transform duration-300"
                               loading="lazy"
                             />
                           </a>
-                          <div className="flex flex-col justify-between">
-                            <h2 className="font-semibold text-[#8B2E1A] text-base sm:text-lg">
-                              {product.name}
+                        </div>
+
+                        {/* Product Details */}
+                        <div className="flex-1 flex flex-col sm:flex-row sm:justify-between gap-4">
+                          <div className="flex-1">
+                            <h2 className="font-bold text-[#0a6134] text-lg mb-2 hover:text-[#EB8A14] transition-colors">
+                              <a href={`/${product.category.toLowerCase()}/${product.slug}`}>
+                                {product.name}
+                              </a>
                             </h2>
+                            
                             {product.selectedWeight && (
-                              <p className="text-gray-600 text-sm">
-                                Weight: <span className="font-medium">{product.selectedWeight}</span>
+                              <p className="text-[#785427] font-bold text-md mb-3">
+                                Weight: <span className="text-lg font-bold text-[#EB8A14]">{product.selectedWeight}</span>
                               </p>
                             )}
 
-                            <div className="flex items-center gap-3 text-sm text-gray-700 mt-2">
-                              <label htmlFor={`qty-${product.cartKey}`} className="font-medium">Qty:</label>
-                              <div className="flex items-center gap-0 bg-white border-2 border-amber-200/50 rounded-lg select-none overflow-hidden">
+                            {/* Quantity Controls */}
+                            <div className="flex items-center gap-4">
+                              <label className="text-[#785427] font-bold text-md">Quantity:</label>
+                              <div className="flex items-center gap-2 bg-[#bfd9bde0] rounded-lg p-1 border-2 border-[#EB8A14]">
                                 <button
                                   onClick={() =>
                                     cartItems[product.cartKey] > 1
                                       ? updateCartItem(product.cartKey, cartItems[product.cartKey] - 1)
                                       : removeFromCart(product.cartKey)
                                   }
-                                  className="cursor-pointer text-lg font-medium px-3 h-8 hover:bg-amber-100 transition text-[#AD3A24]"
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#EB8A14]/20 transition-colors text-[#EB8A14] font-bold hover:text-[#EB8A14]"
                                   aria-label={`Decrease quantity of ${product.name}`}
                                 >
-                                  −
+                                  <Minus size={20} strokeWidth={2.5} />
                                 </button>
                                 <span 
-                                  id={`qty-${product.cartKey}`}
-                                  className="w-8 text-center text-sm font-semibold text-gray-800 border-x-2 border-amber-200/50 h-8 flex items-center justify-center"
+                                  className="w-8 text-center font-semibold text-[#0a6134] text-md font-bold"
                                   aria-live="polite"
                                 >
                                   {cartItems[product.cartKey]}
@@ -311,168 +259,74 @@ const Cart = () => {
                                   onClick={() =>
                                     updateCartItem(product.cartKey, cartItems[product.cartKey] + 1)
                                   }
-                                  className="cursor-pointer text-lg font-medium px-3 h-8 hover:bg-amber-100 transition text-[#AD3A24]"
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#EB8A14]/20 transition-colors text-[#EB8A14] font-bold hover:text-[#EB8A14]"
                                   aria-label={`Increase quantity of ${product.name}`}
                                 >
-                                  +
+                                  <Plus size={20} />
                                 </button>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex sm:flex-col justify-between sm:justify-center items-center w-full sm:w-auto text-sm sm:text-base">
-                          <p className="font-bold text-[#AD3A24] text-lg">
-                            {currency}{product.displayOfferPrice * product.quantity}
-                          </p>
-                          <button
-                            onClick={() => removeFromCart(product.cartKey)}
-                            className="text-red-600 hover:text-red-700 mt-0 sm:mt-3 font-medium text-sm"
-                            aria-label={`Remove ${product.name} from cart`}
-                          >
-                            Remove
-                          </button>
+                          {/* Price and Remove */}
+                          <div className="flex sm:flex-col justify-between sm:items-end gap-4">
+                            <p className="text-xl font-bold text-[#96580D]">
+                              {currency}{(product.displayOfferPrice * product.quantity).toFixed(2)}
+                            </p>
+                            <button
+                              onClick={() => removeFromCart(product.cartKey)}
+                              className="flex items-center gap-1.5 text-[#785427] hover:text-[#EB8A14] font-medium text-sm transition-colors px-3 py-1 rounded-lg hover:bg-[#EB8A14]/20 border border-[#EB8A14]"
+                              aria-label={`Remove ${product.name} from cart`}
+                            >
+                              <Trash2 size={16} />
+                              Remove
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </article>
                   ))}
                 </section>
 
+                {/* Cart Summary & Checkout */}
+                <div className="bg-white rounded-2xl p-1 shadow-xl border-4 border-[#EB8A14]">
+                  <div className="bg-white rounded-xl p-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                      {/* Subtotal */}
+                      <div>
+                        <p className="text-[#785427] text-sm font-medium mb-1">Cart Subtotal</p>
+                        <p className="text-3xl font-bold text-[#96580D]">
+                          {currency}{cartSubtotal.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-[#785427] mt-1">
+                          {getCartCount()} item{getCartCount() !== 1 ? 's' : ''} in cart
+                        </p>
+                      </div>
+
+                      {/* Checkout Button */}
+                      <button
+                        onClick={() => navigate('/add-address')}
+                        className="group flex items-center gap-3 bg-[#EB8A14] hover:bg-[#e9870f] text-white font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-[#EB8A14] whitespace-nowrap"
+                      >
+                        Proceed to Checkout
+                        <ArrowRight className="w-5 h-5 transform transition-transform duration-300 group-hover:translate-x-1" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <a
                   href="/products"
-                  className="flex items-center gap-2 text-[#AD3A24] mt-6 font-medium hover:text-[#8B2E1A] transition text-sm sm:text-base"
+                  className="inline-flex items-center gap-2 text-[#0a6134] hover:text-[#EB8A14] mt-8 font-semibold transition-all duration-300 group"
                 >
-                  ← Continue Shopping
+                  <div className="bg-gradient-to-r from-[#EB8A14] to-[#EB8A14] p-1 rounded-lg group-hover:scale-110 transition-transform">
+                    <ChevronRight className="w-4 h-4 rotate-180 text-white" />
+                  </div>
+                  Continue Shopping
                 </a>
               </>
             )}
           </main>
-
-          {/* RIGHT: ORDER SUMMARY */}
-          {cartArray.length > 0 && (
-            <aside className="lg:w-[380px] w-full h-fit bg-gradient-to-br from-[#AD3A24] to-[#8B2E1A] rounded-3xl p-1.5 border border-amber-200/30 self-start relative overflow-hidden" role="complementary" aria-label="Order summary">
-              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-amber-300/30 rounded-tl-3xl"></div>
-              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-amber-300/30 rounded-br-3xl"></div>
-              
-              <div className="bg-[#ecd4d0] rounded-2xl p-5 relative">
-                <div className="absolute top-2 right-2 w-10 h-10 border-t border-r border-amber-200/40 rounded-tr-xl"></div>
-                <div className="absolute bottom-2 left-2 w-10 h-10 border-b border-l border-amber-200/40 rounded-bl-xl"></div>
-                
-                <h2 className="text-xl font-bold text-[#8B2E1A] mb-4">
-                  Order Summary
-                </h2>
-
-                {/* Address */}
-                <div className="mb-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-4 h-4 text-[#AD3A24]" />
-                    <h3 className="text-sm font-semibold uppercase text-gray-700">
-                      Delivery Address
-                    </h3>
-                  </div>
-                  <div className="relative flex justify-between items-start bg-white/60 rounded-lg p-3 border border-amber-200/50">
-                    <address className="text-gray-700 text-sm pr-3 leading-snug not-italic">
-                      {selectedAddress
-                        ? `${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.state}`
-                        : "No address found. Please add one."}
-                    </address>
-                    <button
-                      onClick={() => setShowAddress(!showAddress)}
-                      className="text-[#AD3A24] hover:text-[#8B2E1A] text-xs sm:text-sm font-semibold whitespace-nowrap"
-                      aria-expanded={showAddress}
-                    >
-                      Change
-                    </button>
-
-                    {showAddress && (
-                      <div 
-                        className="absolute top-full left-0 mt-2 z-10 w-full bg-white border-2 border-amber-200/50 rounded-xl shadow-lg text-sm overflow-hidden"
-                      >
-                        {addresses.map((address, index) => (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              setSelectedAddress(address);
-                              setShowAddress(false);
-                            }}
-                            className="text-gray-700 p-3 hover:bg-amber-50 cursor-pointer w-full text-left border-b border-amber-100 last:border-0"
-                          >
-                            {address.street}, {address.city}, {address.state}
-                          </button>
-                        ))}
-                        <a
-                          href="/add-address"
-                          className="text-[#AD3A24] font-semibold text-center cursor-pointer py-3 hover:bg-amber-50 block"
-                        >
-                          + Add New Address
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Payment */}
-                <div className="mb-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CreditCard className="w-4 h-4 text-[#AD3A24]" />
-                    <h3 className="text-sm font-semibold uppercase text-gray-700">
-                      Payment Method
-                    </h3>
-                  </div>
-                  <select
-                    onChange={(e) => setPaymentOption(e.target.value)}
-                    value={paymentOption}
-                    className="w-full border-2 border-amber-200/50 bg-white/80 px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-[#AD3A24]/40 text-sm font-medium text-gray-700"
-                  >
-                    <option value="COD">Cash On Delivery</option>
-                    <option value="Online">Online Payment</option>
-                  </select>
-                </div>
-
-                <hr className="border-amber-200/50 my-4" />
-
-                {/* Price Summary */}
-                <div className="text-gray-700 space-y-2 text-sm sm:text-base mb-5">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span className="font-semibold">{currency}{cartSubtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Shipping Fee</span>
-                    <span className="text-[#AD3A24] font-semibold">Free</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold text-[#8B2E1A] mt-3 pt-3 border-t-2 border-amber-200/50">
-                    <span>Total</span>
-                    <span>{currency}{cartTotal}</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={placeOrder}
-                  disabled={!selectedAddress}
-                  className="w-full py-3 rounded-full bg-[#AD3A24] hover:bg-[#8B2E1A] text-white font-semibold text-sm sm:text-base transition shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {paymentOption === "COD" ? "Place Order" : "Proceed to Checkout"}
-                </button>
-
-                {/* Trust Badges */}
-                <div className="mt-4 pt-4 border-t border-amber-200/50 grid grid-cols-3 gap-3">
-                  <div className="flex flex-col items-center text-center">
-                    <Shield className="w-5 h-5 text-[#AD3A24] mb-1" />
-                    <span className="text-xs text-gray-600">Secure</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center">
-                    <Truck className="w-5 h-5 text-[#AD3A24] mb-1" />
-                    <span className="text-xs text-gray-600">Fast Delivery</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center">
-                    <CreditCard className="w-5 h-5 text-[#AD3A24] mb-1" />
-                    <span className="text-xs text-gray-600">Easy Pay</span>
-                  </div>
-                </div>
-              </div>
-            </aside>
-          )}
         </div>
       </div>
     </>

@@ -3,12 +3,15 @@ import { useAppContext } from '../context/AppContext';
 import { useParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
+import { ArrowLeft } from "lucide-react";
 
 const ProductCategory = () => {
   const { products } = useAppContext();
   const { category } = useParams();
   const [categoryData, setCategoryData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const {navigate} = useAppContext();
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
@@ -111,7 +114,14 @@ const ProductCategory = () => {
         schema={combinedSchema}
       />
 
-      <div className="mt-16 px-4 sm:px-6 md:px-10 lg:px-16">
+      <div className="mt-5 px-4 sm:px-6 md:px-10 lg:px-16">
+        <button
+  onClick={() => navigate(-1)}
+  className="flex items-center gap-2 text-[#785427] hover:text-[#EB8A14] font-semibold mb-4 transition-colors"
+>
+  <ArrowLeft size={20} />
+  Back
+</button>
         <nav aria-label="Breadcrumb" className="text-sm text-gray-600 mb-4">
           <ol className="flex items-center gap-2">
             <li><a href="/" className="hover:text-primary">Home</a></li>
