@@ -8,7 +8,8 @@ import {
     productList, 
     updateProduct,
     uploadImages,
-    removeProduct
+    removeProduct,
+    bulkUpdateProducts
 } from '../controllers/productController.js'
 
 const productRouter = express.Router()
@@ -20,4 +21,7 @@ productRouter.post('/stock', authSeller, changeStock)
 productRouter.post('/update', authSeller, updateProduct)
 productRouter.post('/upload-images', upload.array("images"), authSeller, uploadImages)
 productRouter.post('/remove', removeProduct);
+productRouter.post('/bulk-update', bulkUpdateProducts);
+
+
 export default productRouter

@@ -1,14 +1,166 @@
 import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Search, User, ShoppingBag, Calculator, Minus, ArrowRight, Edit2, Download, FileText, Share2 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, Search, User, ShoppingBag, Calculator, Minus, ArrowRight, Edit2 } from 'lucide-react';
+import logo from '../../assets/logo.png';
 
+// PDF Generation Utility
+const generateInvoicePDF = (orderData, customerInfo, selectedProducts, currency) => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  // Company Header
+  doc.setFontSize(22);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text('Nu Treats', 15, 20);
+  
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'normal');
+  doc.text('Phone no.: +923274571600', 15, 28);
+  doc.text('Email: Nutreatsofficial@gmail.com', 15, 34);
+  
+  // Invoice Title (centered)
+  doc.setFontSize(28);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(147, 137, 198); // Purple color
+  doc.text('Invoice', 105, 55, { align: 'center' });
+  
+  // Horizontal line
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.line(15, 60, 195, 60);
+  
+  // Bill To Section (Left) and Invoice Details (Right)
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(12);
+  doc.setFont(undefined, 'bold');
+  doc.text('Bill To', 15, 72);
+  
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'normal');
+  doc.text(`${customerInfo.firstName} ${customerInfo.lastName}`, 15, 80);
+  if (customerInfo.street) doc.text(`${customerInfo.street}`, 15, 86);
+  if (customerInfo.city) doc.text(`${customerInfo.city}`, 15, 92);
+  doc.text(`Contact No.: ${customerInfo.phone}`, 15, 98);
+  
+  // Invoice Details (Right side)
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(12);
+  doc.text('Invoice Details', 195, 72, { align: 'right' });
+  
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.text(`Invoice No.: ${orderData._id || 'DRAFT'}`, 195, 80, { align: 'right' });
+  doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 195, 86, { align: 'right' });
+  
+  // Table Header
+  const tableTop = 110;
+  doc.setFillColor(147, 137, 198); // Purple
+  doc.rect(15, tableTop, 180, 10, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(10);
+  doc.text('#', 20, tableTop + 7);
+  doc.text('Item name', 30, tableTop + 7);
+  doc.text('Quantity', 120, tableTop + 7, { align: 'center' });
+  doc.text('Price/unit', 155, tableTop + 7, { align: 'center' });
+  doc.text('Amount', 185, tableTop + 7, { align: 'right' });
+  
+  // Table Rows
+  doc.setTextColor(0, 0, 0);
+  doc.setFont(undefined, 'normal');
+  let yPos = tableTop + 17;
+  let totalQty = 0;
+  
+  selectedProducts.forEach((item, index) => {
+    if (yPos > 250) {
+      doc.addPage();
+      yPos = 20;
+    }
+    
+    const itemName = item.weight ? `${item.name} ${item.weight}` : item.name;
+    totalQty += item.quantity;
+    
+    doc.text((index + 1).toString(), 20, yPos);
+    doc.text(itemName.substring(0, 40), 30, yPos);
+    doc.text(item.quantity.toString(), 120, yPos, { align: 'center' });
+    doc.text(`${currency} ${item.offerPrice.toFixed(2)}`, 155, yPos, { align: 'center' });
+    doc.text(`${currency} ${(item.offerPrice * item.quantity).toFixed(2)}`, 185, yPos, { align: 'right' });
+    
+    yPos += 8;
+  });
+  
+  // Total Row
+  doc.setDrawColor(0, 0, 0);
+  doc.line(15, yPos - 2, 195, yPos - 2);
+  doc.setFont(undefined, 'bold');
+  doc.text('Total', 30, yPos + 5);
+  doc.text(totalQty.toString(), 120, yPos + 5, { align: 'center' });
+  doc.text(`${currency} ${orderData.amount.toFixed(2)}`, 185, yPos + 5, { align: 'right' });
+  
+  yPos += 15;
+  doc.line(15, yPos, 195, yPos);
+  
+  // Invoice Summary (Right side)
+  yPos += 10;
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  
+  doc.text('Sub Total', 140, yPos);
+  doc.text(`${currency} ${orderData.amount.toFixed(2)}`, 185, yPos, { align: 'right' });
+  
+  yPos += 8;
+  doc.setFillColor(147, 137, 198);
+  doc.rect(140, yPos - 5, 55, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(undefined, 'bold');
+  doc.text('Total', 143, yPos);
+  doc.text(`${currency} ${orderData.amount.toFixed(2)}`, 185, yPos, { align: 'right' });
+  
+  doc.setTextColor(0, 0, 0);
+  doc.setFont(undefined, 'normal');
+  yPos += 8;
+  doc.text('Received', 140, yPos);
+  doc.text(`${currency} 0.00`, 185, yPos, { align: 'right' });
+  
+  yPos += 6;
+  doc.text('Balance', 140, yPos);
+  doc.text(`${currency} ${orderData.amount.toFixed(2)}`, 185, yPos, { align: 'right' });
+  
+  yPos += 6;
+  doc.text('Payment Mode', 140, yPos);
+  doc.text(orderData.paymentType || 'Credit', 185, yPos, { align: 'right' });
+  
+  yPos += 6;
+  doc.text('Previous Balance', 140, yPos);
+  doc.text(`${currency} 0.00`, 185, yPos, { align: 'right' });
+  
+  yPos += 6;
+  doc.text('Current Balance', 140, yPos);
+  doc.text(`${currency} ${orderData.amount.toFixed(2)}`, 185, yPos, { align: 'right' });
+  
+  // Terms and Conditions (Left side)
+  const termsY = yPos - 36;
+  doc.setFont(undefined, 'bold');
+  doc.text('Terms And Conditions', 15, termsY);
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(9);
+  doc.text('Thank you for doing business with us.', 15, termsY + 7);
+  doc.text('Please keep all pulses refrigerated.', 15, termsY + 13);
+  doc.text('ALL ITEMS CAN BE RETURNED OR EXCHANGED', 15, termsY + 19);
+  doc.text('WITHIN 7 DAYS.', 15, termsY + 25);
+  
+  return doc;
+};
 export default function CreateBill() {
   const { products, currency, axios } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [step, setStep] = useState(1); // 1 = customer info, 2 = products
+  const [step, setStep] = useState(1);
+  const [showPDFOptions, setShowPDFOptions] = useState(false);
+  const [lastOrder, setLastOrder] = useState(null);
   
   const [customerInfo, setCustomerInfo] = useState({
     firstName: '',
@@ -24,25 +176,31 @@ export default function CreateBill() {
 
   const [paymentType, setPaymentType] = useState('Cash on Delivery');
 
-  // Filter products based on search
+  // Load jsPDF library
+  useEffect(() => {
+    if (!window.jspdf) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Proceed to products step
   const proceedToProducts = () => {
     if (!customerInfo.firstName || !customerInfo.phone) {
-      toast.error('Customer name and phone are required');
+      alert('Customer name and phone are required');
       return;
     }
     setStep(2);
-    toast.success('Customer details saved! Now add products.');
   };
 
   const [addedAnimation, setAddedAnimation] = useState(null);
 
-  // Add product to bill with animation
   const addProductToBill = (product) => {
     const existingProduct = selectedProducts.find(p => p.productId === product._id && !p.weight);
     
@@ -67,12 +225,10 @@ export default function CreateBill() {
       setSelectedProducts([...selectedProducts, newProduct]);
     }
 
-    // Trigger animation
     setAddedAnimation(`${product._id}-null`);
     setTimeout(() => setAddedAnimation(null), 600);
   };
 
-  // Add product variant to bill with animation
   const addVariantToBill = (product, weight) => {
     const existingVariant = selectedProducts.find(
       p => p.productId === product._id && p.weight === weight.weight
@@ -99,15 +255,12 @@ export default function CreateBill() {
       setSelectedProducts([...selectedProducts, newProduct]);
     }
 
-    // Trigger animation
     setAddedAnimation(`${product._id}-${weight.weight}`);
     setTimeout(() => setAddedAnimation(null), 600);
   };
 
-  // Update quantity or remove if 0
   const updateQuantity = (productId, weight, newQuantity) => {
     if (newQuantity < 1) {
-      // Remove from cart
       setSelectedProducts(selectedProducts.filter(
         p => !(p.productId === productId && p.weight === weight)
       ));
@@ -122,20 +275,16 @@ export default function CreateBill() {
     setSelectedProducts(updated);
   };
 
-  // Remove product
   const removeProduct = (index) => {
     setSelectedProducts(selectedProducts.filter((_, i) => i !== index));
-    toast.success('Product removed');
   };
 
-  // Calculate totals
   const calculateTotal = () => {
     return selectedProducts.reduce((sum, item) => {
       return sum + (item.offerPrice * item.quantity);
     }, 0);
   };
 
-  // Check if variant is in cart
   const getVariantQuantity = (productId, weight) => {
     const variant = selectedProducts.find(
       p => p.productId === productId && p.weight === weight
@@ -143,12 +292,50 @@ export default function CreateBill() {
     return variant ? variant.quantity : 0;
   };
 
-  // Handle form submission
+  const handleDownloadPDF = () => {
+    if (!lastOrder) return;
+    
+    const doc = generateInvoicePDF(lastOrder, customerInfo, selectedProducts, currency);
+    doc.save(`invoice-${lastOrder._id}.pdf`);
+    alert('PDF downloaded successfully!');
+  };
+
+  const handleViewPDF = () => {
+    if (!lastOrder) return;
+    
+    const doc = generateInvoicePDF(lastOrder, customerInfo, selectedProducts, currency);
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    window.open(pdfUrl, '_blank');
+  };
+
+  const handleSharePDF = async () => {
+    if (!lastOrder) return;
+    
+    const doc = generateInvoicePDF(lastOrder, customerInfo, selectedProducts, currency);
+    const pdfBlob = doc.output('blob');
+    const file = new File([pdfBlob], `invoice-${lastOrder._id}.pdf`, { type: 'application/pdf' });
+    
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Invoice',
+          text: `Invoice for ${customerInfo.firstName} ${customerInfo.lastName}`
+        });
+      } catch (err) {
+        console.log('Share cancelled');
+      }
+    } else {
+      alert('Sharing not supported on this device. Use Download instead.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (selectedProducts.length === 0) {
-      toast.error('Please add at least one product');
+      alert('Please add at least one product');
       return;
     }
 
@@ -171,33 +358,91 @@ export default function CreateBill() {
       const { data } = await axios.post('/api/order/createBill', orderData);
 
       if (data.success) {
-        toast.success('Bill created successfully!');
-        setSelectedProducts([]);
-        setCustomerInfo({
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: '',
-          street: '',
-          city: '',
-          state: '',
-          zipcode: '',
-          country: 'Pakistan'
-        });
-        setPaymentType('Cash on Delivery');
-        setStep(1);
+        setLastOrder({ ...orderData, _id: data.order._id });
+        setShowPDFOptions(true);
       } else {
-        toast.error(data.message);
+        alert(data.message);
       }
     } catch (error) {
       console.error('Error creating bill:', error);
-      toast.error(error.message);
+      alert(error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const resetForm = () => {
+    setSelectedProducts([]);
+    setCustomerInfo({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      street: '',
+      city: '',
+      state: '',
+      zipcode: '',
+      country: 'Pakistan'
+    });
+    setPaymentType('Cash on Delivery');
+    setStep(1);
+    setShowPDFOptions(false);
+    setLastOrder(null);
+  };
+
   const total = calculateTotal();
+
+  // PDF Options Modal
+  if (showPDFOptions) {
+    return (
+      <div className="min-h-screen bg-[#bfd9bde0] flex justify-center items-center py-8 px-4">
+        <div className="w-full max-w-lg bg-white rounded-3xl border-4 border-[#EB8A14] overflow-hidden">
+          <div className="bg-[#bfd9bde0] rounded-2xl p-8">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-[#EB8A14] rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="text-white" size={32} />
+              </div>
+              <h2 className="text-2xl font-bold text-black mb-2">Bill Created Successfully!</h2>
+              <p className="text-gray-600">Invoice #{lastOrder?._id}</p>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <button
+                onClick={handleDownloadPDF}
+                className="w-full py-3 bg-[#EB8A14] hover:bg-orange-600 text-white font-semibold rounded-xl transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 border-2 border-[#EB8A14]"
+              >
+                <Download size={20} />
+                Download PDF
+              </button>
+
+              <button
+                onClick={handleViewPDF}
+                className="w-full py-3 bg-white hover:bg-gray-50 text-[#EB8A14] font-semibold rounded-xl transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 border-2 border-[#EB8A14]"
+              >
+                <FileText size={20} />
+                View PDF
+              </button>
+
+              <button
+                onClick={handleSharePDF}
+                className="w-full py-3 bg-white hover:bg-gray-50 text-[#EB8A14] font-semibold rounded-xl transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 border-2 border-[#EB8A14]"
+              >
+                <Share2 size={20} />
+                Share PDF
+              </button>
+            </div>
+
+            <button
+              onClick={resetForm}
+              className="w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition"
+            >
+              Create New Bill
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Step 1: Customer Details
   if (step === 1) {
@@ -205,7 +450,7 @@ export default function CreateBill() {
       <div className="min-h-screen bg-[#bfd9bde0] flex justify-center items-start py-8 md:py-12">
         <div className="w-full max-w-2xl mx-auto px-4">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-[#EB8A14]">Create New Bill</h1>
+            <h1 className="text-3xl font-bold text-black">Create New Bill</h1>
             <p className="text-black mt-2">Enter customer details to get started</p>
           </div>
 
@@ -215,7 +460,7 @@ export default function CreateBill() {
                 <div className="p-2.5 bg-white rounded-xl border-2 border-[#EB8A14]">
                   <User className="text-[#EB8A14]" size={22} />
                 </div>
-                <h2 className="text-xl font-semibold text-[#EB8A14]">Customer Information</h2>
+                <h2 className="text-xl font-semibold text-black">Customer Information</h2>
               </div>
 
               <div className="space-y-4">
@@ -229,7 +474,7 @@ export default function CreateBill() {
                       placeholder="Enter first name"
                       value={customerInfo.firstName}
                       onChange={(e) => setCustomerInfo({...customerInfo, firstName: e.target.value})}
-                      className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white placeholder-[#EB8A14]"
+                      className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                       required
                     />
                   </div>
@@ -240,7 +485,7 @@ export default function CreateBill() {
                       placeholder="Enter last name"
                       value={customerInfo.lastName}
                       onChange={(e) => setCustomerInfo({...customerInfo, lastName: e.target.value})}
-                      className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white placeholder-[#EB8A14]"
+                      className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                     />
                   </div>
                 </div>
@@ -254,7 +499,7 @@ export default function CreateBill() {
                     placeholder="Enter phone number"
                     value={customerInfo.phone}
                     onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
-                    className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white placeholder-[#EB8A14]"
+                    className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                     required
                   />
                 </div>
@@ -266,7 +511,7 @@ export default function CreateBill() {
                     placeholder="customer@example.com"
                     value={customerInfo.email}
                     onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
-                    className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white placeholder-[#EB8A14]"
+                    className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                   />
                 </div>
 
@@ -277,7 +522,7 @@ export default function CreateBill() {
                     value={customerInfo.street}
                     onChange={(e) => setCustomerInfo({...customerInfo, street: e.target.value})}
                     rows="2"
-                    className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none resize-none bg-white placeholder-[#EB8A14]"
+                    className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none resize-none bg-white"
                   />
                 </div>
 
@@ -289,7 +534,7 @@ export default function CreateBill() {
                       placeholder="Enter city"
                       value={customerInfo.city}
                       onChange={(e) => setCustomerInfo({...customerInfo, city: e.target.value})}
-                      className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white placeholder-[#EB8A14]"
+                      className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                     />
                   </div>
                   <div>
@@ -299,7 +544,7 @@ export default function CreateBill() {
                       placeholder="Enter state"
                       value={customerInfo.state}
                       onChange={(e) => setCustomerInfo({...customerInfo, state: e.target.value})}
-                      className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white placeholder-[#EB8A14]"
+                      className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                     />
                   </div>
                 </div>
@@ -311,7 +556,7 @@ export default function CreateBill() {
                     placeholder="Enter zipcode"
                     value={customerInfo.zipcode}
                     onChange={(e) => setCustomerInfo({...customerInfo, zipcode: e.target.value})}
-                    className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white placeholder-[#EB8A14]"
+                    className="w-full px-3.5 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                   />
                 </div>
 
@@ -349,14 +594,14 @@ export default function CreateBill() {
       <div className="w-full max-w-7xl mx-auto">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#EB8A14]">Create Bill</h1>
-            <p className="text-[#EB8A14] mt-1">
-              Customer: <span className="font-medium text-[#EB8A14]">{customerInfo.firstName} {customerInfo.lastName}</span>
+            <h1 className="text-2xl font-bold text-black">Create Bill</h1>
+            <p className="text-black mt-1">
+              Customer: <span className="font-medium text-black">{customerInfo.firstName} {customerInfo.lastName}</span>
             </p>
           </div>
           <button
             onClick={() => setStep(1)}
-            className="flex items-center gap-2 px-4 py-2 text-[#EB8A14] hover:bg-white/50 rounded-xl transition border-2 border-[#EB8A14] bg-white"
+            className="flex items-center gap-2 px-4 py-2 text-black hover:bg-white/50 rounded-xl transition border-2 border-[#EB8A14] bg-white"
           >
             <Edit2 size={16} />
             Edit Details
@@ -371,7 +616,7 @@ export default function CreateBill() {
                   <div className="p-2 bg-white rounded-xl border-2 border-[#EB8A14]">
                     <ShoppingBag className="text-[#EB8A14]" size={20} />
                   </div>
-                  <h2 className="text-lg font-semibold text-[#EB8A14]">Add Products</h2>
+                  <h2 className="text-lg font-semibold text-black">Add Products</h2>
                 </div>
 
                 <div className="relative mb-4">
@@ -381,7 +626,7 @@ export default function CreateBill() {
                     placeholder="Search products..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white placeholder-[#EB8A14]"
+                    className="w-full pl-10 pr-4 py-2.5 border-2 border-[#EB8A14] rounded-xl focus:ring-2 focus:ring-[#EB8A14] focus:border-[#EB8A14] outline-none bg-white"
                   />
                 </div>
 
@@ -455,9 +700,7 @@ export default function CreateBill() {
                               </button>
                             )}
                           </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-[#EB8A14]">{currency}{product.offerPrice}</p>
-                          </div>
+                          
                         </div>
                       </div>
                     ))
@@ -474,7 +717,7 @@ export default function CreateBill() {
                   <div className="p-2 bg-white rounded-xl border-2 border-[#EB8A14]">
                     <Calculator className="text-[#EB8A14]" size={20} />
                   </div>
-                  <h2 className="text-lg font-semibold text-[#EB8A14]">Bill Summary</h2>
+                  <h2 className="text-lg font-semibold text-black">Bill Summary</h2>
                 </div>
 
                 {selectedProducts.length === 0 ? (
@@ -488,18 +731,46 @@ export default function CreateBill() {
                   <>
                     <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
                       {selectedProducts.map((item, index) => (
-                        <div key={index} className="flex gap-2 text-sm bg-white p-3 rounded-xl border-2 border-[#EB8A14]">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{item.name}</p>
-                            {item.weight && <p className="text-[#EB8A14] text-xs">{item.weight}</p>}
+                        <div key={index} className="bg-white p-3 rounded-xl border-2 border-[#EB8A14]">
+                          <div className="flex gap-2 items-start mb-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 truncate">{item.name}</p>
+                              {item.weight && <p className="text-[#EB8A14] text-xs">{item.weight}</p>}
+                            </div>
+                            <div className="text-right whitespace-nowrap">
+                              <p className="text-[#EB8A14] text-xs">
+                                {item.quantity} × {currency}{item.offerPrice}
+                              </p>
+                              <p className="font-semibold text-[#EB8A14]">
+                                {currency}{(item.offerPrice * item.quantity).toFixed(2)}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right whitespace-nowrap">
-                            <p className="text-[#EB8A14]">
-                              {item.quantity} × {currency}{item.offerPrice}
-                            </p>
-                            <p className="font-semibold text-[#EB8A14]">
-                              {currency}{(item.offerPrice * item.quantity).toFixed(2)}
-                            </p>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1 bg-[#bfd9bde0] rounded-lg px-2 py-1">
+                              <button
+                                onClick={() => updateQuantity(item.productId, item.weight, item.quantity - 1)}
+                                className="p-1 hover:bg-white rounded transition"
+                              >
+                                <Minus size={14} className="text-[#EB8A14]" />
+                              </button>
+                              <span className="text-sm font-medium text-[#EB8A14] min-w-[24px] text-center">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.productId, item.weight, item.quantity + 1)}
+                                className="p-1 hover:bg-white rounded transition"
+                              >
+                                <Plus size={14} className="text-[#EB8A14]" />
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => removeProduct(index)}
+                              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-red-500 hover:text-red-600"
+                              title="Remove item"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         </div>
                       ))}

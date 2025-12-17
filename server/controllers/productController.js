@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary"
 import Product from "../models/Product.js"
 import { slugify, generateUniqueSlug } from "../utils/slugify.js"
+import mongoose from "mongoose"
 
 // Add Product
 // ✅ FIX 1: addProduct - Keep description as string
@@ -61,6 +62,61 @@ export const addProduct = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error adding product:', error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+
+// Backend: /api/product/bulk-update
+export const bulkUpdateProducts = async (req, res) => {
+  try {
+    const { updates } = req.body;
+    
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.json({ success: false, message: 'No updates provided' });
+    }
+
+    // Use transaction if using MongoDB with sessions
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      let updatedCount = 0;
+
+      for (const update of updates) {
+        const { _id, name, description, weights, price, offerPrice } = update;
+        
+        const updateFields = {};
+        if (name !== undefined) updateFields.name = name;
+        if (description !== undefined) updateFields.description = description;
+        if (weights !== undefined) updateFields.weights = weights;
+        if (price !== undefined) updateFields.price = Number(price);
+        if (offerPrice !== undefined) updateFields.offerPrice = Number(offerPrice);
+
+        if (Object.keys(updateFields).length > 0) {
+          await Product.findByIdAndUpdate(
+            _id,
+            updateFields,
+            { session, new: true }
+          );
+          updatedCount++;
+        }
+      }
+
+      await session.commitTransaction();
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully updated ${updatedCount} product${updatedCount > 1 ? 's' : ''}` 
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  } catch (error) {
+    console.error('Bulk update error:', error);
     res.json({ success: false, message: error.message });
   }
 };
