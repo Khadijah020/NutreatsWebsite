@@ -1,11 +1,10 @@
-// models/Order.js
 import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'user',
-        required: false, // ✅ now optional
+        required: false,
     },
     items: [{
         product: {
@@ -19,19 +18,16 @@ const orderSchema = new mongoose.Schema({
         },
         weight: {
             type: String,
-            required: false, // ✅ Added weight field - optional for products without variants
+            required: false,
         },
-        // ✅ NEW: Store price at time of order
         price: {
             type: Number,
-            required: true, // Original price
+            required: true,
         },
-        // ✅ NEW: Store offer price (discounted price) at time of order
         offerPrice: {
             type: Number,
-            required: true, // Actual price paid
+            required: true,
         },
-        // ✅ OPTIONAL: Store product details for historical reference
         name: {
             type: String,
             required: false,
@@ -48,15 +44,25 @@ const orderSchema = new mongoose.Schema({
     address: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'address',
-        required: false, // ✅ also optional (guest orders may not have saved address)
+        required: false,
     },
-    guestAddress: {  // ✅ new field for guest users
+    guestAddress: {
         type: Object,
         required: false,
     },
     status: {
         type: String,
-        default: 'Order Placed!',
+        enum: [
+            'Order Placed',      // Initial status
+            'Confirmed',         // Seller confirmed the order
+            'Packed',           // Ready for dispatch
+            'Dispatched',       // Out for delivery
+            'Delivered',        // Successfully delivered
+            'Paid',             // Payment received
+            'Cancelled',        // Order cancelled
+            'Returned'          // Order returned
+        ],
+        default: 'Order Placed',
     },
     paymentType: {
         type: String,
@@ -66,6 +72,22 @@ const orderSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    statusHistory: [{
+        status: String,
+        timestamp: {
+            type: Date,
+            default: Date.now
+        },
+        note: String
+    }],
+    deliveryDate: {
+        type: Date,
+        required: false
+    },
+    trackingInfo: {
+        type: String,
+        required: false
+    }
 }, { timestamps: true });
 
 const Order = mongoose.models.order || mongoose.model("order", orderSchema);

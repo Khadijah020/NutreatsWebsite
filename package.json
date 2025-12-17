@@ -7,10 +7,15 @@
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.544.0",
     "react": "^18.3.1",
-    "react-chartjs-2": "^5.3.0",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",
-    "recharts": "^2.6.2",
     "tailwindcss": "^4.1.12"
+  },
+  "overrides": {
+    "recharts": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   }
 }

@@ -15,7 +15,7 @@ const AnnouncementBanner = () => {
   }, []);
 
   return (
-    <div className="bg-[#EB8A14] py-2 text-center text-white font-semibold text-base md:text-lg shadow-md">
+    <div className="bg-[#32792de0] py-2 text-center text-white font-semibold text-base md:text-lg shadow-md">
       <p key={index} className="transition-all duration-700 ease-in-out animate-fade">{messages[index]}</p>
 
       <style>{`

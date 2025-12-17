@@ -112,7 +112,7 @@ export const placeOrderCOD = async (req, res) => {
       address: addressId,
       paymentType: "COD",
       isPaid: false,
-      status: "Order Placed!",
+      status: "Order Placed",
     });
 
     return res.json({
@@ -475,6 +475,105 @@ export const getAllOrders = async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json({ success: true, orders });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Update Order Status: /api/order/update-status
+// Update Order Status (now includes payment): /api/order/update-status
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId, status, note, trackingInfo } = req.body;
+
+    if (!orderId) {
+      return res.json({ success: false, message: 'Order ID is required' });
+    }
+
+    if (!status) {
+      return res.json({ success: false, message: 'Status is required' });
+    }
+
+    const validStatuses = [
+      'Order Placed',
+      'Paid',  // ✅ New payment status
+      'Confirmed',
+      'Packed',
+      'Dispatched',
+      'Delivered',
+      'Cancelled',
+      'Returned'
+    ];
+
+    if (!validStatuses.includes(status)) {
+      return res.json({ 
+        success: false, 
+        message: 'Invalid status value' 
+      });
+    }
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.json({ success: false, message: 'Order not found' });
+    }
+
+    // Add to status history
+    if (!order.statusHistory) {
+      order.statusHistory = [];
+    }
+
+    order.statusHistory.push({
+      status: status,
+      timestamp: new Date(),
+      note: note || ''
+    });
+
+    // Update current status
+    order.status = status;
+
+    // ✅ Auto-update isPaid based on status
+    if (status === 'Paid') {
+      order.isPaid = true;
+      if (!order.paymentDate) {
+        order.paymentDate = new Date();
+      }
+    }
+
+    // ✅ When delivered, set delivery date
+    if (status === 'Delivered') {
+      order.deliveryDate = new Date();
+    }
+
+    // ✅ When completed (delivered + paid for COD)
+    if (status === 'Completed') {
+      if (!order.deliveryDate) {
+        order.deliveryDate = new Date();
+      }
+      order.isPaid = true;
+      if (!order.paymentDate) {
+        order.paymentDate = new Date();
+      }
+    }
+
+    // Update tracking info if provided
+    if (trackingInfo) {
+      order.trackingInfo = trackingInfo;
+    }
+
+    await order.save();
+
+    // Populate order for response
+    const populatedOrder = await Order.findById(orderId)
+      .populate('items.product')
+      .populate('address');
+
+    return res.json({ 
+      success: true, 
+      message: `Order status updated to ${status}`,
+      order: populatedOrder
+    });
   } catch (error) {
     console.log(error.message);
     res.json({ success: false, message: error.message });

@@ -10,7 +10,8 @@ import {
   createManualOrder,
   getSellerOrders,
   createBill,  // ✅ Make sure this is imported
-  togglePaymentStatus
+  togglePaymentStatus,
+  updateOrderStatus
 } from '../controllers/orderController.js';
 
 const orderRouter = express.Router();
@@ -29,5 +30,5 @@ orderRouter.get('/sellerOrders', authSeller, getSellerOrders);
 orderRouter.post('/createBill', authSeller, createBill);
 orderRouter.post('/manual', authSeller, createManualOrder);
 orderRouter.post('/toggle-payment', authSeller, togglePaymentStatus)  // UPDATED ROUTE
-
+orderRouter.post('/update-status', authSeller, updateOrderStatus);
 export default orderRouter;

@@ -25,6 +25,7 @@ import CategoryManagement from './pages/seller/CategoryManagement'
 import CreateBill from './pages/seller/CreateBill'
 import Customers from './pages/seller/Customers.jsx'
 import CustomerDetails from './pages/seller/CustomerDetails.jsx'
+import Dashboard from './pages/seller/Dashboard.jsx'  
 
 const App = () => {
   const isSellerPath = useLocation().pathname.includes("seller");
@@ -50,13 +51,14 @@ const App = () => {
           
           {/* ====== SELLER ROUTES ====== */}
           <Route path='/seller/edit-product/:id' element={<EditProductDetails/>}/>
-          <Route path='/seller' element={isSeller ? <SellerLayout/> : <SellerLogin/>}>
-            <Route index element={isSeller ? <Customers/> : null } />
+          <Route path='/seller' element={isSeller ? <SellerLayout /> : <SellerLogin />}>
+            <Route index element={<Dashboard />} />
+            <Route path='customers' element={<Customers/>} />
+            <Route path='customers/:id' element={<CustomerDetails />} />
             <Route path='product-list' element={<ProductList/>} />
             <Route path='orders' element={<Orders/>} />
             <Route path='orders/:id' element={<OrderDetails />} />
             <Route path='add-product' element={<AddProduct />} />
-            <Route path='customers/:id' element={<CustomerDetails />} />
             <Route path='category' element={<CategoryManagement />} />
             <Route path='create-bill' element={<CreateBill />} />
           </Route>

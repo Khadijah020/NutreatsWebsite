@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
-import { Download, FileText, ImageIcon, X } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { Download, FileText, Image, X } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
 const PriceListGenerator = ({ products, categories, currency }) => {
   const [showModal, setShowModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [debugLog, setDebugLog] = useState([]);
   const priceListRef = useRef(null);
 
   // Organize products by category with category-specific weights ONLY
@@ -23,10 +24,8 @@ const PriceListGenerator = ({ products, categories, currency }) => {
         };
       }
 
-      // Add product to category
       categoryData[categoryName].products.push(product);
 
-      // Collect ONLY the weights that exist in THIS CATEGORY's products
       if (product.weights && Array.isArray(product.weights) && product.weights.length > 0) {
         product.weights.forEach(weightObj => {
           if (weightObj.weight) {
@@ -36,13 +35,11 @@ const PriceListGenerator = ({ products, categories, currency }) => {
       }
     });
 
-    // Convert Sets to sorted arrays for each category
     const organizedData = {};
     Object.keys(categoryData).forEach(catName => {
       organizedData[catName] = {
         products: categoryData[catName].products,
         weights: Array.from(categoryData[catName].weightsSet).sort((a, b) => {
-          // Try to sort numerically if possible
           const numA = parseFloat(a);
           const numB = parseFloat(b);
           if (!isNaN(numA) && !isNaN(numB)) {
@@ -59,108 +56,205 @@ const PriceListGenerator = ({ products, categories, currency }) => {
   const categoryData = organizeProductsByCategory();
 
   const downloadAsPDF = async () => {
-  setIsGenerating(true);
+    setIsGenerating(true);
+    try {
+      const doc = new jsPDF('l', 'mm', 'a4');
+      
+      let yPosition = 20;
+      const pageHeight = 190;
 
-  try {
-    const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+      doc.setFontSize(20);
+      doc.setTextColor(235, 138, 20);
+      doc.text('Price List', 148, yPosition, { align: 'center' });
+      yPosition += 15;
 
-    // Title
-    doc.setFontSize(20);
-    doc.setTextColor(235, 138, 20);
-    doc.text('Price List', 148, 15, { align: 'center' });
+      const categoryEntries = Object.entries(categoryData);
 
-    let categoryIndex = 0;
+      categoryEntries.forEach(([categoryName, data], categoryIndex) => {
+        const { products, weights } = data;
 
-    Object.entries(categoryData).forEach(([categoryName, data]) => {
-      const { products, weights } = data;
-
-      // Start a NEW PAGE for every category EXCEPT the first
-      if (categoryIndex > 0) {
-        doc.addPage();
-      }
-
-      // Category Header
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 0);
-      doc.text(categoryName, 14, 28);
-
-      // Prepare category-specific data
-      const headers = ['Product', ...(weights.length > 0 ? weights : ['Price'])];
-
-      const tableData = products.map(product => {
-        const row = [product.name];
-
-        if (weights.length > 0) {
-          weights.forEach(weight => {
-            const wObj = product.weights?.find(w => w.weight === weight);
-            row.push(wObj ? `${currency}${wObj.offerPrice}` : '-');
-          });
-        } else {
-          row.push(`${currency}${product.offerPrice || 0}`);
+        if (categoryIndex > 0) {
+          yPosition += 10;
+          if (yPosition > pageHeight - 30) {
+            doc.addPage();
+            yPosition = 20;
+          }
         }
 
-        return row;
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text(categoryName, 14, yPosition);
+        yPosition += 7;
+
+        const tableData = products.map(product => {
+          const row = [product.name];
+          
+          if (weights.length > 0) {
+            weights.forEach(weight => {
+              const weightData = product.weights?.find(w => w.weight === weight);
+              row.push(weightData ? `${currency}${weightData.offerPrice}` : '-');
+            });
+          } else {
+            row.push(`${currency}${product.offerPrice || 0}`);
+          }
+          
+          return row;
+        });
+
+        const headers = ['Product', ...(weights.length > 0 ? weights : ['Price'])];
+
+        autoTable(doc, {
+          startY: yPosition,
+          head: [headers],
+          body: tableData,
+          theme: 'grid',
+          headStyles: {
+            fillColor: [235, 138, 20],
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold',
+            halign: 'left'
+          },
+          bodyStyles: {
+            fontSize: 9
+          },
+          columnStyles: {
+            0: { halign: 'left' },
+            ...Object.fromEntries(
+              Array.from({ length: weights.length }, (_, i) => [i + 1, { halign: 'center' }])
+            )
+          },
+          alternateRowStyles: {
+            fillColor: [191, 217, 189]
+          },
+          margin: { left: 14, right: 14 }
+        });
+
+        yPosition = doc.lastAutoTable.finalY + 5;
       });
 
-      // Create category table on same page
-      doc.autoTable({
-        startY: 35,
-        head: [headers],
-        body: tableData,
-        theme: 'grid',
-        headStyles: {
-          fillColor: [235, 138, 20],
-          textColor: [255, 255, 255],
-          fontSize: 10
-        },
-        bodyStyles: { fontSize: 9 },
-        alternateRowStyles: {
-          fillColor: [191, 217, 189]
-        },
-        columnStyles: {
-          0: { halign: 'left' },
-          ...Object.fromEntries(
-            (weights.length > 0
-              ? weights
-              : ['Price']
-            ).map((_, i) => [i + 1, { halign: 'center' }])
-          )
-        },
-        margin: { left: 14, right: 14 }
-      });
-
-      categoryIndex++;
-    });
-
-    doc.save('price-list.pdf');
-  } catch (error) {
-    console.error(error);
-    alert('PDF generation failed: ' + error.message);
-  } finally {
-    setIsGenerating(false);
-  }
-};
+      doc.save('price-list.pdf');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('PDF generation failed: ' + error.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const downloadAsImage = async () => {
     setIsGenerating(true);
+    const logs = [];
+    
     try {
-      if (priceListRef.current) {
-        const canvas = await html2canvas(priceListRef.current, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          logging: false,
-          useCORS: true,
-          allowTaint: true
+      logs.push('Starting image generation...');
+      
+      if (!priceListRef.current) {
+        throw new Error('Price list reference not found');
+      }
+      
+      logs.push('Found price list element');
+      
+      // CRITICAL: Store computed styles BEFORE cloning
+      const originalElement = priceListRef.current;
+      const allOriginalElements = [originalElement, ...originalElement.querySelectorAll('*')];
+      
+      logs.push(`Capturing styles from ${allOriginalElements.length} original elements...`);
+      
+      const styleMap = new Map();
+      allOriginalElements.forEach((el, index) => {
+        const computed = window.getComputedStyle(el);
+        const colorProps = [
+          'color', 'backgroundColor', 'borderColor',
+          'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+          'outlineColor', 'textDecorationColor', 'columnRuleColor'
+        ];
+        
+        const styles = {};
+        colorProps.forEach(prop => {
+          const value = computed[prop];
+          if (value && value !== 'rgba(0, 0, 0, 0)' && value !== 'transparent') {
+            styles[prop] = value;
+          }
         });
         
-        const link = document.createElement('a');
-        link.download = 'price-list.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      }
+        // Store using a unique identifier
+        if (!el.dataset.imgId) {
+          el.dataset.imgId = `img-${index}`;
+        }
+        styleMap.set(el.dataset.imgId, styles);
+      });
+      
+      logs.push('Styles captured, starting html2canvas...');
+      
+      const canvas = await html2canvas(priceListRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        onclone: (clonedDoc, clonedElement) => {
+          logs.push('In onclone callback...');
+          
+          // Find the cloned content
+          const content = clonedDoc.getElementById('price-list-content');
+          if (!content) {
+            logs.push('ERROR: Could not find cloned content element!');
+            return;
+          }
+          
+          logs.push('Found cloned content, applying stored styles...');
+          
+          // Get all elements in clone
+          const allClonedElements = [content, ...content.querySelectorAll('*')];
+          
+          let applied = 0;
+          allClonedElements.forEach((clonedEl) => {
+            const imgId = clonedEl.dataset.imgId;
+            if (imgId && styleMap.has(imgId)) {
+              const styles = styleMap.get(imgId);
+              Object.entries(styles).forEach(([prop, value]) => {
+                clonedEl.style[prop] = value;
+                applied++;
+              });
+              
+              // Also remove all classes to be extra safe
+              clonedEl.removeAttribute('class');
+            }
+          });
+          
+          logs.push(`Applied ${applied} style properties to cloned elements`);
+          
+          // Force background color
+          content.style.backgroundColor = '#ffffff';
+          
+          logs.push('Style application complete');
+        }
+      });
+      
+      logs.push('Canvas generated successfully');
+      logs.push(`Canvas size: ${canvas.width}x${canvas.height}`);
+      
+      // Clean up dataset attributes
+      allOriginalElements.forEach(el => {
+        delete el.dataset.imgId;
+      });
+      
+      const link = document.createElement('a');
+      link.download = 'price-list.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      logs.push('Image download triggered');
+      setDebugLog(logs);
+      
     } catch (error) {
+      logs.push(`ERROR: ${error.message}`);
+      logs.push(`Stack: ${error.stack}`);
+      setDebugLog(logs);
       console.error('Error generating image:', error);
-      alert('Failed to generate image. Error: ' + error.message);
+      console.log('Debug log:', logs);
+      alert('Failed to generate image. Check console for debug log. Error: ' + error.message);
     } finally {
       setIsGenerating(false);
     }
@@ -168,73 +262,159 @@ const PriceListGenerator = ({ products, categories, currency }) => {
 
   return (
     <>
-      {/* Generate Button */}
       <button
         onClick={() => setShowModal(true)}
-        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#EB8A14] text-white rounded-lg hover:bg-[#d67a0f] transition font-semibold text-xs sm:text-sm shadow-md whitespace-nowrap"
+        className="flex items-center gap-2 px-3 sm:px-4 py-2 text-white rounded-lg transition font-semibold text-xs sm:text-sm shadow-md whitespace-nowrap"
+        style={{ backgroundColor: '#EB8A14' }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d67a0f'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EB8A14'}
       >
         <FileText size={16} className="sm:w-[18px] sm:h-[18px]" />
         <span className="hidden sm:inline">Generate Price List</span>
         <span className="sm:hidden">Price List</span>
       </button>
 
-      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] flex flex-col border-4 border-[#EB8A14]">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b-2 border-[#EB8A14]">
-              <h3 className="text-lg sm:text-xl font-bold text-black">Price List Preview</h3>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '1152px',
+            width: '100%',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            border: '4px solid #EB8A14'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px',
+              borderBottom: '2px solid #EB8A14'
+            }}>
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: '#000000',
+                margin: 0
+              }}>Price List Preview</h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                style={{
+                  padding: '8px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '8px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 aria-label="Close modal"
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-auto p-4 sm:p-6">
-              <div ref={priceListRef} className="bg-white p-6 sm:p-8">
-                {/* Title */}
-                <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8" style={{ color: '#EB8A14' }}>
+            <div style={{
+              flex: 1,
+              overflow: 'auto',
+              padding: '24px',
+              backgroundColor: '#f9f9f9'
+            }}>
+              <div 
+                ref={priceListRef} 
+                id="price-list-content"
+                style={{ 
+                  backgroundColor: '#ffffff',
+                  padding: '32px'
+                }}
+              >
+                <h1 style={{
+                  fontSize: '32px',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  marginBottom: '32px',
+                  color: '#EB8A14'
+                }}>
                   Price List
                 </h1>
 
-                {/* Categories with their specific weight columns */}
                 {Object.entries(categoryData).length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No products available</p>
+                  <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                    <p style={{ color: '#6b7280' }}>No products available</p>
                   </div>
                 ) : (
                   Object.entries(categoryData).map(([categoryName, data], idx) => {
                     const { products, weights } = data;
                     
                     return (
-                      <div key={idx} className="mb-6 sm:mb-8 break-inside-avoid">
-                        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-black">
+                      <div key={idx} style={{ marginBottom: '32px' }}>
+                        <h2 style={{
+                          fontSize: '20px',
+                          fontWeight: 'bold',
+                          marginBottom: '16px',
+                          color: '#000000'
+                        }}>
                           {categoryName}
                         </h2>
                         
-                        <div className="overflow-x-auto">
-                          <table className="w-full border-2 border-[#EB8A14] min-w-max">
+                        <div style={{ overflowX: 'auto' }}>
+                          <table 
+                            style={{ 
+                              width: '100%', 
+                              border: '2px solid #EB8A14',
+                              borderCollapse: 'collapse'
+                            }}
+                          >
                             <thead>
                               <tr style={{ backgroundColor: '#EB8A14' }}>
-                                <th className="border-2 border-[#EB8A14] px-3 sm:px-4 py-2 text-left text-white font-semibold text-sm sm:text-base">
+                                <th 
+                                  style={{ 
+                                    border: '2px solid #EB8A14',
+                                    padding: '8px 16px',
+                                    textAlign: 'left',
+                                    color: '#ffffff',
+                                    fontWeight: 600
+                                  }}
+                                >
                                   Product
                                 </th>
                                 {weights.length > 0 ? (
                                   weights.map((weight, i) => (
                                     <th 
-                                      key={i} 
-                                      className="border-2 border-[#EB8A14] px-3 sm:px-4 py-2 text-center text-white font-semibold text-sm sm:text-base whitespace-nowrap"
+                                      key={i}
+                                      style={{ 
+                                        border: '2px solid #EB8A14',
+                                        padding: '8px 16px',
+                                        textAlign: 'center',
+                                        color: '#ffffff',
+                                        fontWeight: 600,
+                                        whiteSpace: 'nowrap'
+                                      }}
                                     >
                                       {weight}
                                     </th>
                                   ))
                                 ) : (
-                                  <th className="border-2 border-[#EB8A14] px-3 sm:px-4 py-2 text-center text-white font-semibold text-sm sm:text-base">
+                                  <th 
+                                    style={{ 
+                                      border: '2px solid #EB8A14',
+                                      padding: '8px 16px',
+                                      textAlign: 'center',
+                                      color: '#ffffff',
+                                      fontWeight: 600
+                                    }}
+                                  >
                                     Price
                                   </th>
                                 )}
@@ -244,9 +424,17 @@ const PriceListGenerator = ({ products, categories, currency }) => {
                               {products.map((product, pIdx) => (
                                 <tr
                                   key={product._id || pIdx}
-                                  className={pIdx % 2 === 0 ? 'bg-white' : 'bg-[#bfd9bde0]'}
+                                  style={{ 
+                                    backgroundColor: pIdx % 2 === 0 ? '#ffffff' : '#bfd9bd'
+                                  }}
                                 >
-                                  <td className="border-2 border-[#EB8A14] px-3 sm:px-4 py-2 text-black text-sm sm:text-base">
+                                  <td 
+                                    style={{ 
+                                      border: '2px solid #EB8A14',
+                                      padding: '8px 16px',
+                                      color: '#000000'
+                                    }}
+                                  >
                                     {product.name}
                                   </td>
                                   {weights.length > 0 ? (
@@ -255,14 +443,29 @@ const PriceListGenerator = ({ products, categories, currency }) => {
                                       return (
                                         <td
                                           key={wIdx}
-                                          className="border-2 border-[#EB8A14] px-3 sm:px-4 py-2 text-center text-black font-semibold text-sm sm:text-base whitespace-nowrap"
+                                          style={{ 
+                                            border: '2px solid #EB8A14',
+                                            padding: '8px 16px',
+                                            textAlign: 'center',
+                                            color: '#000000',
+                                            fontWeight: 600,
+                                            whiteSpace: 'nowrap'
+                                          }}
                                         >
                                           {weightData ? `${currency}${weightData.offerPrice}` : '-'}
                                         </td>
                                       );
                                     })
                                   ) : (
-                                    <td className="border-2 border-[#EB8A14] px-3 sm:px-4 py-2 text-center text-black font-semibold text-sm sm:text-base">
+                                    <td 
+                                      style={{ 
+                                        border: '2px solid #EB8A14',
+                                        padding: '8px 16px',
+                                        textAlign: 'center',
+                                        color: '#000000',
+                                        fontWeight: 600
+                                      }}
+                                    >
                                       {currency}{product.offerPrice || 0}
                                     </td>
                                   )}
@@ -278,15 +481,49 @@ const PriceListGenerator = ({ products, categories, currency }) => {
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 p-4 border-t-2 border-[#EB8A14]">
+            <div style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: '12px',
+              padding: '16px',
+              borderTop: '2px solid #EB8A14',
+              flexWrap: 'wrap'
+            }}>
               <button
                 onClick={downloadAsPDF}
                 disabled={isGenerating}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-[#EB8A14] text-white rounded-lg hover:bg-[#d67a0f] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  backgroundColor: isGenerating ? '#d1d5db' : '#EB8A14',
+                  color: '#ffffff',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  cursor: isGenerating ? 'not-allowed' : 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isGenerating) e.currentTarget.style.backgroundColor = '#d67a0f';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isGenerating) e.currentTarget.style.backgroundColor = '#EB8A14';
+                }}
               >
                 {isGenerating ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #ffffff',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
                 ) : (
                   <Download size={18} />
                 )}
@@ -296,12 +533,38 @@ const PriceListGenerator = ({ products, categories, currency }) => {
               <button
                 onClick={downloadAsImage}
                 disabled={isGenerating}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  backgroundColor: isGenerating ? '#d1d5db' : '#16a34a',
+                  color: '#ffffff',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  cursor: isGenerating ? 'not-allowed' : 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isGenerating) e.currentTarget.style.backgroundColor = '#15803d';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isGenerating) e.currentTarget.style.backgroundColor = '#16a34a';
+                }}
               >
                 {isGenerating ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #ffffff',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
                 ) : (
-                  <ImageIcon size={18} />
+                  <Image size={18} />
                 )}
                 Download Image
               </button>
@@ -309,6 +572,47 @@ const PriceListGenerator = ({ products, categories, currency }) => {
           </div>
         </div>
       )}
+
+      {debugLog.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: '#1f2937',
+          color: '#ffffff',
+          padding: '16px',
+          borderRadius: '8px',
+          maxWidth: '400px',
+          maxHeight: '300px',
+          overflow: 'auto',
+          fontSize: '12px',
+          zIndex: 9999,
+          fontFamily: 'monospace'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <strong>Debug Log:</strong>
+            <button 
+              onClick={() => setDebugLog([])}
+              style={{
+                backgroundColor: 'transparent',
+                color: '#ffffff',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0 4px'
+              }}
+            >✕</button>
+          </div>
+          {debugLog.map((log, i) => (
+            <div key={i} style={{ marginBottom: '4px' }}>{log}</div>
+          ))}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </>
   );
 };
