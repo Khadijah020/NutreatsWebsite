@@ -25,7 +25,6 @@ const EditProductDetails = () => {
     metaDescription: "",
     metaKeywords: "",
     imageAltTexts: [],
-    faqs: [],
   });
   const [categories, setCategories] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
@@ -39,7 +38,6 @@ const EditProductDetails = () => {
   const [aiMetadata, setAiMetadata] = useState({ title: "", description: "", keywords: "" });
   const [showMetadataPreview, setShowMetadataPreview] = useState(false);
   const [generatingAltText, setGeneratingAltText] = useState(false);
-  const [generatingFAQs, setGeneratingFAQs] = useState(false);
   const [seoAnalysis, setSeoAnalysis] = useState(null);
   const [analyzingSEO, setAnalyzingSEO] = useState(false);
   const [jsonLdSchema, setJsonLdSchema] = useState(null);
@@ -58,8 +56,7 @@ const EditProductDetails = () => {
 
   const tabs = [
     { id: "basic", label: "Basic Info", icon: "📦" },
-    { id: "seo", label: "SEO & Images", icon: "🔍" },
-    { id: "faqs", label: "FAQs & Analysis", icon: "❓" },
+    { id: "seo", label: "SEO & Schema", icon: "🔍" },
     { id: "advanced", label: "Weight Variants", icon: "⚖️" }
   ];
 
@@ -69,9 +66,7 @@ const EditProductDetails = () => {
       case "basic":
         return product.name.trim() && product.description.trim() && product.category && product.image.length > 0;
       case "seo":
-        return product.metaTitle?.trim() || product.metaDescription?.trim() || product.imageAltTexts?.some(alt => alt?.trim());
-      case "faqs":
-        return product.faqs?.length > 0 || seoAnalysis !== null;
+        return product.metaTitle?.trim() || product.metaDescription?.trim() || product.imageAltTexts?.some(alt => alt?.trim()) || jsonLdSchema !== null;
       case "advanced":
         return product.weights?.length > 0 || product.isFeatured;
       default:
@@ -425,35 +420,6 @@ const EditProductDetails = () => {
       toast.error("Failed to generate some ALT texts");
     } finally {
       setGeneratingAltText(false);
-    }
-  };
-
-  // FAQs AI Functions
-  const generateProductFAQs = async () => {
-    if (!product.name.trim() || !product.description.trim()) {
-      toast.error("Please enter product name and description first");
-      return;
-    }
-
-    setGeneratingFAQs(true);
-    try {
-      const { data } = await axios.post("/api/ai/generate-faqs", {
-        productName: product.name,
-        description: product.description,
-        category: product.category || "",
-      });
-
-      if (data.success && data.faqs && data.faqs.length > 0) {
-        handleInputChange("faqs", data.faqs);
-        toast.success(`Generated ${data.faqs.length} FAQs!`);
-      } else {
-        toast.error(data.message || "Failed to generate FAQs");
-      }
-    } catch (error) {
-      console.error("AI FAQs Error:", error);
-      toast.error(error.response?.data?.message || "Failed to generate FAQs");
-    } finally {
-      setGeneratingFAQs(false);
     }
   };
 
@@ -958,99 +924,6 @@ const EditProductDetails = () => {
                 </div>
               </div>
             )}
-          </div>
-        );
-
-      case "faqs":
-        return (
-          <div className="space-y-6">
-            {/* FAQs */}
-            <div className="space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-                <h3 className="text-lg md:text-xl font-bold text-[#EB8A14]">❓ Product FAQs</h3>
-                <button
-                  type="button"
-                  onClick={generateProductFAQs}
-                  disabled={generatingFAQs || !product.name.trim() || !product.description.trim()}
-                  className={`flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-all ${
-                    generatingFAQs || !product.name.trim() || !product.description.trim()
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl hover:scale-105'
-                  }`}
-                >
-                  <Sparkles size={18} className={generatingFAQs ? 'animate-spin' : ''} />
-                  {generatingFAQs ? 'Generating...' : 'Generate FAQs with AI'}
-                </button>
-              </div>
-              
-              <p className="text-xs md:text-sm text-gray-600">
-                FAQs improve SEO and help customers find answers quickly.
-              </p>
-
-              {(!product.faqs || product.faqs.length === 0) ? (
-                <div className="text-center py-8 md:py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-                  <p className="text-sm md:text-base text-gray-500 mb-3">No FAQs added yet. Generate them automatically or add manually below.</p>
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange("faqs", [...(product.faqs || []), { question: '', answer: '' }])}
-                    className="text-[#EB8A14] hover:text-orange-600 font-semibold text-sm md:text-base"
-                  >
-                    + Add Manual FAQ
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {product.faqs.map((faq, index) => (
-                    <div key={index} className="p-4 md:p-5 bg-white rounded-xl border-2 border-gray-200">
-                      <div className="flex items-start justify-between mb-2">
-                        <label className="text-sm md:text-base font-semibold text-gray-700">
-                          Question {index + 1}
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => handleInputChange("faqs", product.faqs.filter((_, i) => i !== index))}
-                          className="text-red-500 hover:text-red-600 p-1"
-                        >
-                          <X size={18} />
-                        </button>
-                      </div>
-                      <input
-                        type="text"
-                        value={faq.question}
-                        onChange={(e) => {
-                          const newFaqs = [...product.faqs];
-                          newFaqs[index].question = e.target.value;
-                          handleInputChange("faqs", newFaqs);
-                        }}
-                        placeholder="E.g., What are the ingredients?"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm md:text-base mb-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-                      />
-                      <label className="text-sm md:text-base font-semibold text-gray-700 block mb-1">
-                        Answer
-                      </label>
-                      <textarea
-                        value={faq.answer}
-                        onChange={(e) => {
-                          const newFaqs = [...product.faqs];
-                          newFaqs[index].answer = e.target.value;
-                          handleInputChange("faqs", newFaqs);
-                        }}
-                        placeholder="Detailed answer..."
-                        rows="3"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm md:text-base resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-                      />
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange("faqs", [...product.faqs, { question: '', answer: '' }])}
-                    className="w-full py-3 border-2 border-dashed border-[#EB8A14] rounded-xl text-[#EB8A14] hover:bg-[#bfd9bde0] font-semibold text-sm md:text-base transition-colors"
-                  >
-                    + Add Another FAQ
-                  </button>
-                </div>
-              )}
-            </div>
 
             {/* SEO ANALYSIS */}
             <div className="border-t-2 border-[#EB8A14] pt-6 space-y-4">
@@ -1434,7 +1307,7 @@ const EditProductDetails = () => {
 
           {/* Tabs Navigation - Fully Responsive */}
           <div className="mb-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}

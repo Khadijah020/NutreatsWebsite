@@ -755,99 +755,6 @@ const AddProduct = () => {
                 </div>
               </div>
             )}
-          </div>
-        );
-
-      case "faqs":
-        return (
-          <div className="space-y-6">
-            {/* FAQs */}
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                <h3 className="text-lg font-bold text-[#EB8A14]">❓ Product FAQs</h3>
-                <button
-                  type="button"
-                  onClick={generateProductFAQs}
-                  disabled={generatingFAQs || !name.trim() || !description.trim()}
-                  className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                    generatingFAQs || !name.trim() || !description.trim()
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transform hover:scale-105'
-                  }`}
-                >
-                  <Sparkles size={18} className={generatingFAQs ? 'animate-spin' : ''} />
-                  {generatingFAQs ? 'Generating...' : '✨ Generate with AI'}
-                </button>
-              </div>
-              
-              <p className="text-sm text-gray-600">
-                FAQs improve SEO and help customers find answers quickly.
-              </p>
-
-              {faqs.length === 0 ? (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                  <p className="text-gray-500">No FAQs added yet. Generate them automatically or add manually below.</p>
-                  <button
-                    type="button"
-                    onClick={() => setFaqs([...faqs, { question: '', answer: '' }])}
-                    className="mt-3 text-[#EB8A14] hover:text-orange-600 font-semibold text-sm"
-                  >
-                    + Add Manual FAQ
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {faqs.map((faq, index) => (
-                    <div key={index} className="p-4 bg-white rounded-lg border-2 border-gray-200">
-                      <div className="flex items-start justify-between mb-2">
-                        <label className="text-sm font-semibold text-gray-700">
-                          Question {index + 1}
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setFaqs(faqs.filter((_, i) => i !== index))}
-                          className="text-red-500 hover:text-red-600"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                      <input
-                        type="text"
-                        value={faq.question}
-                        onChange={(e) => {
-                          const newFaqs = [...faqs];
-                          newFaqs[index].question = e.target.value;
-                          setFaqs(newFaqs);
-                        }}
-                        placeholder="E.g., What are the ingredients?"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-                      />
-                      <label className="text-sm font-semibold text-gray-700 block mb-1">
-                        Answer
-                      </label>
-                      <textarea
-                        value={faq.answer}
-                        onChange={(e) => {
-                          const newFaqs = [...faqs];
-                          newFaqs[index].answer = e.target.value;
-                          setFaqs(newFaqs);
-                        }}
-                        placeholder="Detailed answer..."
-                        rows="3"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-                      />
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setFaqs([...faqs, { question: '', answer: '' }])}
-                    className="w-full py-2 border-2 border-dashed border-[#EB8A14] rounded-lg text-[#EB8A14] hover:bg-[#bfd9bde0] font-semibold text-sm transition-colors"
-                  >
-                    + Add Another FAQ
-                  </button>
-                </div>
-              )}
-            </div>
 
             {/* SEO ANALYSIS */}
             <div className="border-t-2 border-[#EB8A14] pt-6 space-y-4">
@@ -1159,7 +1066,7 @@ const AddProduct = () => {
             </div>
 
             {/* Desktop: Horizontal tabs */}
-            <div className="hidden md:grid md:grid-cols-4 gap-4">
+            <div className="hidden md:grid md:grid-cols-3 gap-4">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
