@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "server.js",
   "type": "module",
-
   "scripts": {
     "start": "node server.js",
     "server": "nodemon server.js"
@@ -13,6 +12,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google-analytics/data": "^5.2.1",
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",

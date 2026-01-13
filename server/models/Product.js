@@ -15,6 +15,16 @@ const productSchema = new mongoose.Schema({
   category: { type: String, required: true },
   inStock: { type: Boolean, default: true },
   isFeatured: { type: Boolean, default: false },
+  // SEO Metadata
+  metaTitle: { type: String, default: '' },
+  metaDescription: { type: String, default: '' },
+  metaKeywords: { type: String, default: '' }, // SEO keywords (comma-separated)
+  imageAltTexts: [{ type: String }], // ALT text for each image
+  faqs: [{
+    question: { type: String },
+    answer: { type: String }
+  }],
+  jsonLdSchema: { type: Object, default: null }, // AI-generated JSON-LD structured data
   weights: [
     {
       weight: { type: String, required: true },

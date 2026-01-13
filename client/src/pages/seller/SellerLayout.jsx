@@ -4,7 +4,7 @@ import logo from "../../assets/logo.png";
 import { Outlet, NavLink, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useState } from "react";
-import { Menu, Users, Package, ShoppingCart, FileText, PlusCircle, Grid, LayoutDashboard } from "lucide-react";
+import { Menu, Users, Package, ShoppingCart, FileText, PlusCircle, Grid, LayoutDashboard, BarChart3 } from "lucide-react";
 
 const SellerLayout = () => {
   const { axios, navigate } = useAppContext();
@@ -12,6 +12,7 @@ const SellerLayout = () => {
 
   const sidebarLinks = [
     { name: "Dashboard", path: "/seller", icon: LayoutDashboard },
+    { name: "Traffic & Insights", path: "/seller/traffic-insights", icon: BarChart3 },
     { name: "Customers", path: "/seller/customers", icon: Users },
     { name: "Add Product", path: "/seller/add-product", icon: PlusCircle },
     { name: "Manage Categories", path: "/seller/category", icon: Grid },

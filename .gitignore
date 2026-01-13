@@ -1,1 +1,4 @@
 node_modules/
+google-analytics-credentials.json
+.env
+.env.local  

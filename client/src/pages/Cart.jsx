@@ -6,6 +6,8 @@ import SEO from "../components/SEO";
 import { Helmet } from "react-helmet-async";
 import { ChevronRight, ShoppingCart, ArrowRight, Plus, Minus, Trash2 } from "lucide-react";
 import { ArrowLeft } from "lucide-react";
+import { trackViewCart, trackBeginCheckout } from "../utils/analytics";
+
 const Cart = () => {
   const {
     products,
@@ -67,8 +69,30 @@ const Cart = () => {
 };
 
   useEffect(() => {
-    if (products.length > 0 && cartItems) getCart();
+    if (products.length > 0 && cartItems) {
+      getCart();
+    }
   }, [products, cartItems]);
+
+  // Track cart view in analytics when cartArray updates
+  useEffect(() => {
+    if (cartArray.length > 0) {
+      const cartItemsForAnalytics = cartArray.map(item => ({
+        item_id: item._id,
+        item_name: item.selectedWeight ? `${item.name} - ${item.selectedWeight}` : item.name,
+        item_category: item.category,
+        price: item.displayOfferPrice,
+        quantity: item.quantity
+      }));
+      
+      const totalValue = cartArray.reduce(
+        (sum, item) => sum + item.displayOfferPrice * item.quantity,
+        0
+      );
+      
+      trackViewCart(cartItemsForAnalytics, totalValue);
+    }
+  }, [cartArray]);
 
   const cartSubtotal = cartArray.reduce(
     (sum, item) => sum + item.displayOfferPrice * item.quantity,
@@ -305,7 +329,19 @@ const Cart = () => {
 
                       {/* Checkout Button */}
                       <button
-                        onClick={() => navigate('/add-address')}
+                        onClick={() => {
+                          // 📊 Track begin checkout
+                          const cartItemsForAnalytics = cartArray.map(item => ({
+                            item_id: item._id,
+                            item_name: item.selectedWeight ? `${item.name} - ${item.selectedWeight}` : item.name,
+                            item_category: item.category,
+                            price: item.displayOfferPrice,
+                            quantity: item.quantity
+                          }));
+                          trackBeginCheckout(cartItemsForAnalytics, cartSubtotal);
+                          
+                          navigate('/add-address');
+                        }}
                         className="group flex items-center gap-3 bg-[#EB8A14] hover:bg-[#e9870f] text-white font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-[#EB8A14] whitespace-nowrap"
                       >
                         Proceed to Checkout

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppContext } from '../../context/AppContext'
 import toast from 'react-hot-toast'
 import { Package, ChevronRight, Search, Calendar, CreditCard, User, Filter } from 'lucide-react'
@@ -7,6 +7,7 @@ import { Package, ChevronRight, Search, Calendar, CreditCard, User, Filter } fro
 const Orders = () => {
     const { currency, axios } = useAppContext()
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
     const [orders, setOrders] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('all')
@@ -23,6 +24,42 @@ const Orders = () => {
     }
 
     useEffect(() => { fetchOrders() }, [])
+
+    // Set filter based on URL parameters when component mounts or URL changes
+    useEffect(() => {
+        const statusParam = searchParams.get('status')
+        const paidParam = searchParams.get('paid')
+
+        if (statusParam) {
+            // Handle multiple statuses separated by comma (e.g., "Cancelled,Returned")
+            const statuses = statusParam.split(',')
+            
+            // Find matching stage
+            if (statuses.includes('Order Placed')) {
+                setFilterStatus('new')
+            } else if (statuses.includes('Packed')) {
+                setFilterStatus('Packed')
+            } else if (statuses.includes('Confirmed')) {
+                setFilterStatus('confirmed')
+            } else if (statuses.includes('Dispatched')) {
+                setFilterStatus('dispatched')
+            } else if (statuses.includes('Delivered')) {
+                if (paidParam === 'false') {
+                    setFilterStatus('unpaid')
+                } else {
+                    setFilterStatus('delivered')
+                }
+            } else if (statuses.includes('Cancelled') || statuses.includes('Returned')) {
+                setFilterStatus('cancelled')
+            } else if (statuses.includes('Completed')) {
+                setFilterStatus('completed')
+            }
+        } else if (paidParam === 'true') {
+            setFilterStatus('paid')
+        } else if (paidParam === 'false') {
+            setFilterStatus('unpaid')
+        }
+    }, [searchParams])
 
     // Close dropdown when clicking outside
     useEffect(() => {

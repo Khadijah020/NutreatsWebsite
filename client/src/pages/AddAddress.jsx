@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import toast from "react-hot-toast";
 import { ChevronRight, MapPin, User, Mail, Phone, Home, Info, Truck, Shield, CreditCard } from 'lucide-react';
 import { ArrowLeft } from "lucide-react";
+import { trackPurchase } from '../utils/analytics';
 const InputField = ({ type, placeholder, name, handleChange, address, icon: Icon, optional = false, autocomplete }) => (
   <div className="relative">
     {Icon && (
@@ -41,6 +42,22 @@ const AddAddress = () => {
   });
 
   const [cartArray, setCartArray] = useState([]);
+
+  // Auto-populate user data when user is logged in
+  useEffect(() => {
+    if (user) {
+      const nameParts = user.name ? user.name.trim().split(' ') : [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      setAddress((prev) => ({
+        ...prev,
+        firstName: firstName,
+        lastName: lastName,
+        email: user.email || prev.email,
+      }));
+    }
+  }, [user]);
 
   const getCart = () => {
     const tempArray = [];
@@ -124,6 +141,39 @@ const AddAddress = () => {
         });
 
         if (data.success) {
+          // Track purchase in Google Analytics
+          const analyticsItems = cartArray.map(item => ({
+            item_id: item._id,
+            item_name: item.selectedWeight ? `${item.name} - ${item.selectedWeight}` : item.name,
+            item_category: item.category,
+            price: item.displayOfferPrice,
+            quantity: item.quantity
+          }));
+          
+          trackPurchase(
+            data.orderId || 'guest_' + Date.now(),
+            analyticsItems,
+            cartTotal,
+            shippingFee,
+            codFee
+          );
+
+          // Save order details for success page
+          localStorage.setItem('lastOrderDetails', JSON.stringify({
+            items: cartArray.map(item => ({
+              name: item.name,
+              selectedWeight: item.selectedWeight,
+              quantity: item.quantity,
+              price: item.displayOfferPrice
+            })),
+            address: address,
+            subtotal: cartTotal,
+            shippingFee: shippingFee,
+            codFee: codFee,
+            total: cartTotal,
+            paymentMethod: address.paymentMethod
+          }));
+
           toast.success("Order placed successfully!");
           setCartItems({});
           localStorage.removeItem("guestAddress");
@@ -154,6 +204,23 @@ const AddAddress = () => {
         });
 
         if (orderData.data.success) {
+          // Track purchase in Google Analytics
+          const analyticsItems = cartArray.map(item => ({
+            item_id: item._id,
+            item_name: item.selectedWeight ? `${item.name} - ${item.selectedWeight}` : item.name,
+            item_category: item.category,
+            price: item.displayOfferPrice,
+            quantity: item.quantity
+          }));
+          
+          trackPurchase(
+            orderData.data.orderId || Date.now().toString(),
+            analyticsItems,
+            cartTotal,
+            shippingFee,
+            codFee
+          );
+
           toast.success("Order placed successfully!");
           setCartItems({});
           localStorage.removeItem("cartMeta");

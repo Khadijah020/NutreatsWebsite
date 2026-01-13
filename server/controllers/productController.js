@@ -8,7 +8,7 @@ import mongoose from "mongoose"
 export const addProduct = async (req, res) => {
   try {
     const productData = JSON.parse(req.body.productData);
-    const { name, description, category, price, offerPrice, weights, isFeatured } = productData;
+    const { name, description, category, price, offerPrice, weights, isFeatured, metaTitle, metaDescription, imageAltTexts, faqs, jsonLdSchema } = productData;
 
     console.log('➕ Adding product:', name);
     console.log('📝 Description received:', description);
@@ -48,6 +48,11 @@ export const addProduct = async (req, res) => {
       weights: weights || [],
       inStock: true,
       isFeatured: isFeatured || false, // ✅ ADD THIS
+      metaTitle: metaTitle || '',
+      metaDescription: metaDescription || '',
+      imageAltTexts: imageAltTexts || [],
+      faqs: faqs || [],
+      jsonLdSchema: jsonLdSchema || null,
       date: Date.now()
     });
 
@@ -135,7 +140,12 @@ export const updateProduct = async (req, res) => {
       image, 
       weights, 
       inStock,
-      isFeatured // ✅ ADD THIS - Accept isFeatured from request
+      isFeatured, // ✅ ADD THIS - Accept isFeatured from request
+      metaTitle,
+      metaDescription,
+      imageAltTexts,
+      faqs,
+      jsonLdSchema
     } = req.body;
     
     console.log('🔄 Updating product:', id);
@@ -150,7 +160,12 @@ export const updateProduct = async (req, res) => {
       image: image || [],
       weights: weights || [],
       inStock: inStock !== undefined ? inStock : true,
-      isFeatured: isFeatured !== undefined ? isFeatured : false // ✅ ADD THIS LINE
+      isFeatured: isFeatured !== undefined ? isFeatured : false, // ✅ ADD THIS LINE
+      metaTitle: metaTitle || '',
+      metaDescription: metaDescription || '',
+      imageAltTexts: imageAltTexts || [],
+      faqs: faqs || [],
+      jsonLdSchema: jsonLdSchema || null
     };
 
     // ✅ Keep description as string - don't convert to array!

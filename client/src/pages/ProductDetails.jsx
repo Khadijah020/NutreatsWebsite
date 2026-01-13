@@ -5,6 +5,7 @@ import ProductCard from "../components/ProductCard";
 import { ChevronRight, ShoppingCart, Truck, Shield, ZoomIn, CheckCircle2, ChevronLeft, ChevronRight as RightArrow } from "lucide-react";
 import SEO from "../components/SEO";
 import { ArrowLeft } from "lucide-react";
+import { trackProductView, trackAddToCart, trackRemoveFromCart } from "../utils/analytics";
 
 // ✅ Fisher-Yates shuffle algorithm for randomizing array
 const shuffleArray = (array) => {
@@ -96,6 +97,9 @@ const ProductDetails = () => {
       
       // Get recently viewed products
       getRecentlyViewed(found._id);
+      
+      // 📊 Track product view in analytics
+      trackProductView(found);
     }
   }, [slug, products]);
 
@@ -148,6 +152,9 @@ const ProductDetails = () => {
       addToCart(product._id, selectedWeight);
       updateCartItem(key, (cartItems[key] || 0) + 1);
 
+      // 📊 Track add to cart in analytics
+      trackAddToCart(product, 1, selectedWeight);
+
       showToast('add', '🎉 Added to cart!');
     } catch (err) {
       console.error("❌ Add to cart failed:", err);
@@ -155,16 +162,39 @@ const ProductDetails = () => {
   };
 
   const handleUpdateCart = (newQuantity) => {
+    const previousQuantity = cartItems[cartKey] || 0;
+    
     if (newQuantity <= 0) {
       updateCartItem(cartKey, 0);
+      // 📊 Track remove from cart
+      trackRemoveFromCart(product, previousQuantity, selectedWeight);
       showToast('remove', '🗑️ Removed from cart');
     } else {
       updateCartItem(cartKey, newQuantity);
+      // 📊 Track quantity change
+      if (newQuantity > previousQuantity) {
+        trackAddToCart(product, newQuantity - previousQuantity, selectedWeight);
+      } else {
+        trackRemoveFromCart(product, previousQuantity - newQuantity, selectedWeight);
+      }
       showToast('update', '✨ Cart updated!');
     }
   };
 
-  const productSchema = {
+  // Enhanced Product Schema with more SEO details
+  // Use stored JSON-LD schema if available, otherwise generate dynamically
+  let productSchema, breadcrumbSchema, faqSchema;
+
+  if (product.jsonLdSchema) {
+    // Use AI-generated schema stored in the database
+    productSchema = product.jsonLdSchema.productSchema || null;
+    breadcrumbSchema = product.jsonLdSchema.breadcrumbSchema || null;
+    faqSchema = product.jsonLdSchema.faqSchema || null;
+  }
+
+  // Fallback to dynamic generation if no stored schema
+  if (!productSchema) {
+    productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": product.name,
@@ -177,24 +207,51 @@ const ProductDetails = () => {
       "@type": "Brand",
       "name": "NuTreats"
     },
-    "offers": {
-      "@type": "Offer",
-      "url": `http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`,
-      "priceCurrency": "PKR",
-      "price": currentOfferPrice,
-      "availability": product.inStock 
-        ? "https://schema.org/InStock" 
-        : "https://schema.org/OutOfStock",
-      "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      "seller": {
-        "@type": "Organization",
-        "name": "NuTreats"
-      }
-    },
-    "category": product.category
+    "offers": product.weights && product.weights.length > 0 
+      ? product.weights.map(weight => ({
+          "@type": "Offer",
+          "url": `http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`,
+          "priceCurrency": "PKR",
+          "price": weight.offerPrice,
+          "availability": product.inStock 
+            ? "https://schema.org/InStock" 
+            : "https://schema.org/OutOfStock",
+          "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          "seller": {
+            "@type": "Organization",
+            "name": "NuTreats"
+          },
+          "itemOffered": {
+            "@type": "Product",
+            "name": `${product.name} - ${weight.weight}`
+          }
+        }))
+      : {
+          "@type": "Offer",
+          "url": `http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`,
+          "priceCurrency": "PKR",
+          "price": currentOfferPrice,
+          "availability": product.inStock 
+            ? "https://schema.org/InStock" 
+            : "https://schema.org/OutOfStock",
+          "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          "seller": {
+            "@type": "Organization",
+            "name": "NuTreats"
+          }
+        },
+    "category": product.category,
+    // Add aggregate rating (you can make this dynamic later)
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.5",
+      "reviewCount": "25"
+    }
   };
+  }
 
-  const breadcrumbSchema = {
+  if (!breadcrumbSchema) {
+    breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
@@ -218,10 +275,31 @@ const ProductDetails = () => {
       }
     ]
   };
+  }
+
+  // FAQPage Schema - helps Google show FAQs in search results
+  if (!faqSchema && product.faqs && product.faqs.length > 0) {
+    faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": product.faqs.map(faq => ({
+      "@type": "Question",
+      "name": faq.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.answer
+      }
+    }))
+  };
+  }
+
+  // Combine all schemas
+  const allSchemas = [productSchema, breadcrumbSchema];
+  if (faqSchema) allSchemas.push(faqSchema);
 
   const combinedSchema = {
     "@context": "https://schema.org",
-    "@graph": [productSchema, breadcrumbSchema]
+    "@graph": allSchemas
   };
 
   const metaDescription = Array.isArray(product.description)
@@ -231,8 +309,8 @@ const ProductDetails = () => {
   return (
     <>
       <SEO
-        title={`${product.name} - Buy Online | NuTreats Pakistan`}
-        description={`${metaDescription}... Shop now with free delivery in Lahore. ${discount > 0 ? `Save ${discount}%` : 'Best price guaranteed'}.`}
+        title={product.metaTitle || `${product.name} - Buy Online | NuTreats Pakistan`}
+        description={product.metaDescription || `${metaDescription}... Shop now with free delivery in Lahore. ${discount > 0 ? `Save ${discount}%` : 'Best price guaranteed'}.`}
         keywords={`${product.name}, ${product.category}, buy ${product.name} online, healthy snacks pakistan, ${categoryData?.name || product.category} online`}
         url={`http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`}
         canonicalUrl={`http://localhost:5173/${product.category.toLowerCase()}/${product.slug}`}
@@ -288,12 +366,12 @@ const ProductDetails = () => {
 
       <div className="bg-white min-h-screen px-4 sm:px-6 py-10 mt-16">
         <button
-  onClick={() => navigate(-1)}
-  className="flex items-center gap-2 text-[#785427] hover:text-[#EB8A14] font-semibold mb-4 transition-colors"
->
-  <ArrowLeft size={20} />
-  Back
-</button>
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-[#785427] hover:text-[#EB8A14] font-semibold mb-4 transition-colors"
+        >
+          <ArrowLeft size={20} />
+          Back
+        </button>
         {/* Breadcrumb */}
         <nav 
           className="flex items-center text-[#785427] text-sm mb-6 max-w-6xl mx-auto flex-wrap gap-1"
@@ -324,7 +402,7 @@ const ProductDetails = () => {
               <div className="relative w-full max-w-sm h-80 bg-white rounded-2xl flex items-center justify-center overflow-hidden border-2 border-[#EB8A14]">
                 <img
                   src={product.image?.[thumbnail] ?? product.image?.[0]}
-                  alt={`${product.name} - ${categoryData?.name || product.category}`}
+                  alt={(product.imageAltTexts && product.imageAltTexts[thumbnail]) || `${product.name} - ${categoryData?.name || product.category}`}
                   className="object-contain h-full w-full cursor-zoom-in transition-transform duration-500 hover:scale-105"
                   onClick={() => setShowZoom(true)}
                 />
@@ -343,7 +421,7 @@ const ProductDetails = () => {
                     <img
                       key={index}
                       src={img}
-                      alt={`${product.name} view ${index + 1}`}
+                      alt={(product.imageAltTexts && product.imageAltTexts[index]) || `${product.name} view ${index + 1}`}
                       onClick={() => setThumbnail(index)}
                       className={`w-20 h-20 rounded-xl border-2 object-cover cursor-pointer transition-all ${
                         thumbnail === index
@@ -501,13 +579,39 @@ const ProductDetails = () => {
           </div>
         </article>
 
-        {/* Related Products - LARGER CARDS */}
+        {/* FAQs Section */}
+        {product.faqs && product.faqs.length > 0 && (
+          <section className="mt-12 max-w-6xl mx-auto bg-[#bfd9bde0] rounded-2xl border-2 border-[#EB8A14] p-6 md:p-8 shadow-lg">
+            <h2 className="text-2xl md:text-3xl font-serif tracking-tight mb-6 text-[#0a6134] flex items-center gap-2">
+              <span className="text-3xl">❓</span>
+              Frequently Asked Questions
+            </h2>
+            <div className="space-y-4">
+              {product.faqs.map((faq, index) => (
+                <details 
+                  key={index} 
+                  className="group bg-[#e9a654] rounded-xl border-2 border-[#EB8A14] overflow-hidden transition-all duration-300"
+                >
+                  <summary className="cursor-pointer px-5 py-4 font-semibold text-[#0a6134] hover:bg-[#EB8A14] hover:text-white transition-colors duration-300 flex items-start gap-3 list-none">
+                    <span className="mt-0.5 text-[#EB8A14] group-hover:text-white transition-colors">▸</span>
+                    <span className="flex-1">{faq.question}</span>
+                  </summary>
+                  <div className="px-5 py-4 bg-white border-t-2 border-[#EB8A14]">
+                    <p className="text-[#785427] leading-relaxed whitespace-pre-line">{faq.answer}</p>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Related Products */}
         {relatedProducts.length > 0 && (
           <section className="mt-16 max-w-6xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-serif tracking-tight mb-6 text-[#0a6134] text-center">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-serif tracking-tight mb-6 text-[#0a6134] text-center">
               You May Also Like
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {relatedProducts.map((related) => (
                 <div 
                   key={related._id} 
@@ -526,24 +630,25 @@ const ProductDetails = () => {
           </section>
         )}
 
-        {/* Recently Viewed Products - NO SCROLL */}
+        {/* Recently Viewed Products - Mobile Friendly */}
         {recentlyViewedProducts.length > 0 && (
-          <section className="mt-16 max-w-6xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-serif tracking-tight text-[#0a6134] text-center mb-6">
+          <section className="mt-16 max-w-6xl mx-auto px-4 md:px-0">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-serif tracking-tight text-[#0a6134] text-center mb-6">
               Recently Viewed
             </h2>
             
-            <div className="py-6">
-              <div className="flex gap-4 justify-center flex-wrap">
-                {recentlyViewedProducts.map((viewed) => (
-                  <div 
-                    key={viewed._id} 
-                    className="w-53 transform transition-all duration-300 hover:scale-105"
-                  >
-                    <ProductCard product={viewed} />
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+              {recentlyViewedProducts.map((viewed) => (
+                <div 
+                  key={viewed._id} 
+                  className="transform transition-all duration-300 hover:scale-105"
+                >
+                  <ProductCard 
+                    product={viewed}
+                    className="h-full"
+                  />
+                </div>
+              ))}
             </div>
           </section>
         )}
@@ -563,7 +668,7 @@ const ProductDetails = () => {
             >
               <img
                 src={product.image?.[thumbnail] ?? product.image?.[0]}
-                alt={`${product.name} - zoomed view`}
+                alt={(product.imageAltTexts && product.imageAltTexts[thumbnail]) || `${product.name} - zoomed view`}
                 className="max-w-[90vw] max-h-[80vh] rounded-lg object-contain"
               />
               <button

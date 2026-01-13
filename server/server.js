@@ -12,6 +12,8 @@ import orderRouter from './routes/orderRoute.js';
 import addressRouter from './routes/addressRoute.js';
 import categoryRouter from './routes/categoryRoute.js'
 import customerRouter from './routes/customerRoute.js';
+import aiRouter from './routes/aiRoute.js';
+import analyticsRoute from './routes/analyticsRoute.js';
 
 
 const app = express();
@@ -44,6 +46,8 @@ app.use('/api/address', addressRouter)
 app.use('/api/order', orderRouter)
 app.use('/api/category', categoryRouter)
 app.use('/api/customer', customerRouter);
+app.use('/api/ai', aiRouter);
+app.use('/api/analytics', analyticsRoute);
 
 
 app.listen(port, ()=>{

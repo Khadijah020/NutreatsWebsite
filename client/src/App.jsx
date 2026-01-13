@@ -25,7 +25,10 @@ import CategoryManagement from './pages/seller/CategoryManagement'
 import CreateBill from './pages/seller/CreateBill'
 import Customers from './pages/seller/Customers.jsx'
 import CustomerDetails from './pages/seller/CustomerDetails.jsx'
-import Dashboard from './pages/seller/Dashboard.jsx'  
+import Dashboard from './pages/seller/Dashboard.jsx'
+import TrafficInsights from './pages/seller/TrafficInsights.jsx'
+import GoogleAnalytics from './components/GoogleAnalytics.jsx'
+import OrderSuccess from './pages/OrderSuccess.jsx'
 
 const App = () => {
   const isSellerPath = useLocation().pathname.includes("seller");
@@ -33,6 +36,7 @@ const App = () => {
   
   return (
     <div className='text-default min-h-screen text-gray-700 bg-[#e6dbcee0]'>
+      <GoogleAnalytics />
       {isSellerPath ? null : <Navbar/>}
       {isSellerPath ? null : <AnnouncementBanner/>}
       {showUserLogin ? <Login/> : null}
@@ -47,6 +51,7 @@ const App = () => {
           <Route path='/products' element={<AllProducts/>}/>
           <Route path='/cart' element={<Cart/>}/>
           <Route path='/add-address' element={<AddAddress/>}/>
+          <Route path='/order-success' element={<OrderSuccess/>}/>
           <Route path='/my-orders' element={<MyOrders/>}/>
           
           {/* ====== SELLER ROUTES ====== */}
@@ -61,6 +66,7 @@ const App = () => {
             <Route path='add-product' element={<AddProduct />} />
             <Route path='category' element={<CategoryManagement />} />
             <Route path='create-bill' element={<CreateBill />} />
+            <Route path='traffic-insights' element={<TrafficInsights />} />
           </Route>
 
           {/* ====== DYNAMIC ROUTES LAST ====== */}

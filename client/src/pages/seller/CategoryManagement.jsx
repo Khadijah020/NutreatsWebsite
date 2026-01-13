@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Pencil, Trash2, Plus, X, Upload, ArrowUp, ArrowDown } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, Upload, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
+import { useAppContext } from '../../context/AppContext';
+import toast from 'react-hot-toast';
 
 export default function CategoryManagement() {
+  const { axios } = useAppContext();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -9,6 +12,9 @@ export default function CategoryManagement() {
   const [currentCategory, setCurrentCategory] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [generatingAI, setGeneratingAI] = useState(false);
+  const [aiDescription, setAiDescription] = useState('');
+  const [showAIPreview, setShowAIPreview] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -183,6 +189,46 @@ export default function CategoryManagement() {
     setImagePreview('');
   };
 
+
+  const generateAIDescription = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Please enter a category name first');
+      return;
+    }
+
+    try {
+      setGeneratingAI(true);
+      const { data } = await axios.post('/api/ai/generate-category-description', {
+        categoryName: formData.name,
+      });
+
+      if (data.success) {
+        setAiDescription(data.description);
+        setShowAIPreview(true);
+        toast.success('AI description generated successfully!');
+      } else {
+        toast.error(data.message || 'Failed to generate description');
+      }
+    } catch (error) {
+      console.error('Error generating AI description:', error);
+      toast.error(error.response?.data?.message || 'Failed to generate description');
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
+  const approveAIDescription = () => {
+    setFormData(prev => ({ ...prev, description: aiDescription }));
+    setShowAIPreview(false);
+    setAiDescription('');
+    toast.success('Description approved and added!');
+  };
+
+  const rejectAIDescription = () => {
+    setShowAIPreview(false);
+    setAiDescription('');
+    toast('Description rejected');
+  };
   const removeImage = () => {
     setImageFile(null);
     setImagePreview('');
@@ -258,12 +304,12 @@ export default function CategoryManagement() {
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2 flex-wrap">
-                        <button onClick={() => moveCategory(index, 'up')} disabled={index === 0} className={`p-2 rounded-lg border-2 ${index === 0 ? 'text-gray-300 border-gray-300 cursor-not-allowed' : 'text-[#EB8A14] border-[#EB8A14] hover:bg-[#bfd9bde0]'}`}>
+                        {/* <button onClick={() => moveCategory(index, 'up')} disabled={index === 0} className={`p-2 rounded-lg border-2 ${index === 0 ? 'text-gray-300 border-gray-300 cursor-not-allowed' : 'text-[#EB8A14] border-[#EB8A14] hover:bg-[#bfd9bde0]'}`}>
                           <ArrowUp size={16} />
                         </button>
                         <button onClick={() => moveCategory(index, 'down')} disabled={index === categories.length - 1} className={`p-2 rounded-lg border-2 ${index === categories.length - 1 ? 'text-gray-300 border-gray-300 cursor-not-allowed' : 'text-[#EB8A14] border-[#EB8A14] hover:bg-[#bfd9bde0]'}`}>
                           <ArrowDown size={16} />
-                        </button>
+                        </button> */}
                         <button onClick={() => handleEdit(category)} className="p-2 text-[#EB8A14] border-2 border-[#EB8A14] hover:bg-[#bfd9bde0] rounded-lg transition">
                           <Pencil size={16} />
                         </button>
@@ -357,6 +403,62 @@ export default function CategoryManagement() {
                   <label className="block text-sm font-semibold text-[#EB8A14] mb-2">
                     Description
                   </label>
+                  
+                  {/* AI Generate Button */}
+                  <div className="mb-2">
+                    <button
+                      type="button"
+                      onClick={generateAIDescription}
+                      disabled={generatingAI || !formData.name.trim()}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        generatingAI || !formData.name.trim()
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-md hover:shadow-lg'
+                      }`}
+                    >
+                      <Sparkles size={16} className={generatingAI ? 'animate-spin' : ''} />
+                      {generatingAI ? 'Generating...' : 'Generate with AI'}
+                    </button>
+                  </div>
+
+                  {/* AI Preview Modal */}
+                  {showAIPreview && (
+                    <div className="mb-4 p-4 border-2 border-purple-500 rounded-xl bg-purple-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-purple-700 flex items-center gap-2">
+                          <Sparkles size={16} />
+                          AI Generated Description
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={rejectAIDescription}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                      <div className="mb-3 p-3 bg-white rounded-lg text-sm text-gray-700">
+                        {aiDescription}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={approveAIDescription}
+                          className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                        >
+                          ✓ Approve & Use
+                        </button>
+                        <button
+                          type="button"
+                          onClick={rejectAIDescription}
+                          className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                        >
+                          ✗ Reject
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <textarea
                     name="description"
                     value={formData.description}
