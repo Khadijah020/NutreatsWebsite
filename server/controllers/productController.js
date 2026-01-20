@@ -8,7 +8,7 @@ import mongoose from "mongoose"
 export const addProduct = async (req, res) => {
   try {
     const productData = JSON.parse(req.body.productData);
-    const { name, description, category, price, offerPrice, weights, isFeatured, metaTitle, metaDescription, imageAltTexts, faqs, jsonLdSchema } = productData;
+    const { name, description, category, price, offerPrice, weights, isFeatured, metaTitle, metaDescription, imageAltTexts, jsonLdSchema } = productData;
 
     console.log('➕ Adding product:', name);
     console.log('📝 Description received:', description);
@@ -51,7 +51,6 @@ export const addProduct = async (req, res) => {
       metaTitle: metaTitle || '',
       metaDescription: metaDescription || '',
       imageAltTexts: imageAltTexts || [],
-      faqs: faqs || [],
       jsonLdSchema: jsonLdSchema || null,
       date: Date.now()
     });
@@ -144,7 +143,6 @@ export const updateProduct = async (req, res) => {
       metaTitle,
       metaDescription,
       imageAltTexts,
-      faqs,
       jsonLdSchema
     } = req.body;
     
@@ -164,7 +162,6 @@ export const updateProduct = async (req, res) => {
       metaTitle: metaTitle || '',
       metaDescription: metaDescription || '',
       imageAltTexts: imageAltTexts || [],
-      faqs: faqs || [],
       jsonLdSchema: jsonLdSchema || null
     };
 

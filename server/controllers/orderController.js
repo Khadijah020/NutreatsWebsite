@@ -59,31 +59,40 @@ export const placeOrderCOD = async (req, res) => {
 
     let finalUserId = userId;
     let addressId;
+    let customerName = '';
+    let customerEmail = '';
+    let customerPhone = '';
 
     if (!userId) {
+      // Guest checkout - look up customer by EMAIL only
       let existingUser = null;
 
-      // Check by email first (if provided)
       if (address.email) {
         existingUser = await User.findOne({ email: address.email });
       }
 
-      //  If not found, check by phone (if provided)
-      if (!existingUser && address.phone) {
-        existingUser = await User.findOne({ phone: address.phone });
-      }
-
-      // If still not found, create a new guest user
-      if (!existingUser) {
+      if (!existingUser && address.email) {
+        // Create new guest customer with hasPassword = false
         existingUser = await User.create({
           name: `${address.firstName} ${address.lastName}`,
-          email: address.email || `${address.phone}@guest.local`, // fallback
-          phone: address.phone || null,
+          email: address.email,
+          hasPassword: false,
+          isGuest: true,
+        });
+      } else if (!existingUser) {
+        // No email provided - create with placeholder
+        existingUser = await User.create({
+          name: `${address.firstName} ${address.lastName}`,
+          email: `guest_${Date.now()}@guest.local`,
+          hasPassword: false,
           isGuest: true,
         });
       }
 
       finalUserId = existingUser._id;
+      customerName = `${address.firstName} ${address.lastName}`;
+      customerEmail = address.email || '';
+      customerPhone = address.phone || '';
 
       // Save guest's address as a proper Address document
       const newAddress = await Address.create({
@@ -102,14 +111,59 @@ export const placeOrderCOD = async (req, res) => {
       addressId = newAddress._id;
     } else {
       addressId = address; // logged-in user (ObjectId)
+      
+      // Get user details for order record
+      const user = await User.findById(userId);
+      const userAddress = await Address.findById(address);
+      
+      customerName = user?.name || (userAddress ? `${userAddress.firstName} ${userAddress.lastName}` : '');
+      customerEmail = user?.email || userAddress?.email || '';
+      customerPhone = userAddress?.phone || '';
+    }
+
+    // Get shipping address details
+    let shippingAddressData = null;
+    if (!userId) {
+      // Guest - use provided address
+      shippingAddressData = {
+        firstName: address.firstName,
+        lastName: address.lastName,
+        email: address.email,
+        phone: address.phone,
+        street: address.street,
+        city: address.city,
+        state: address.state,
+        zipcode: address.zipcode,
+        country: address.country,
+      };
+    } else {
+      // Logged-in user - fetch address
+      const userAddress = await Address.findById(addressId);
+      if (userAddress) {
+        shippingAddressData = {
+          firstName: userAddress.firstName,
+          lastName: userAddress.lastName,
+          email: userAddress.email,
+          phone: userAddress.phone,
+          street: userAddress.street,
+          city: userAddress.city,
+          state: userAddress.state,
+          zipcode: userAddress.zipcode,
+          country: userAddress.country,
+        };
+      }
     }
 
     // ✅ Create the order with validated items (including prices)
     const newOrder = await Order.create({
       userId: finalUserId,
+      customerName,
+      customerEmail,
+      customerPhone,
       items: validatedItems, // Now includes price, offerPrice, name, image
       amount: total,
       address: addressId,
+      shippingAddress: shippingAddressData,
       paymentType: "COD",
       isPaid: false,
       status: "Order Placed",
@@ -136,42 +190,82 @@ export const createBill = async (req, res) => {
       return res.json({ success: false, message: 'No items provided' });
     }
 
-    if (!address || !address.firstName || !address.phone) {
-      return res.json({ success: false, message: 'Customer name and phone are required' });
+    if (!address || !address.firstName) {
+      return res.json({ success: false, message: 'Customer name is required' });
     }
 
-    // Step 1: Check if customer already exists by phone number
-    let existingAddress = await Address.findOne({ phone: address.phone });
+    // Step 1: Look up or create customer by EMAIL (primary identifier)
+    let existingUser = null;
     let customerAddressId = null;
 
-    if (existingAddress) {
-      // Update existing address with any new information
-      existingAddress.firstName = address.firstName || existingAddress.firstName;
-      existingAddress.lastName = address.lastName || existingAddress.lastName;
-      existingAddress.email = address.email || existingAddress.email;
-      existingAddress.street = address.street || existingAddress.street;
-      existingAddress.city = address.city || existingAddress.city;
-      existingAddress.state = address.state || existingAddress.state;
-      existingAddress.zipcode = address.zipcode || existingAddress.zipcode;
-      existingAddress.country = address.country || existingAddress.country;
+    if (address.email) {
+      // Look up customer by email
+      existingUser = await User.findOne({ email: address.email });
       
-      await existingAddress.save();
-      customerAddressId = existingAddress._id;
-    } else {
-      // Create new address record for this customer
-      const newAddress = await Address.create({
-        userId: null, // No user account for manual billing customers
-        firstName: address.firstName,
-        lastName: address.lastName || '',
-        email: address.email || '',
-        phone: address.phone,
-        street: address.street || '',
-        city: address.city || '',
-        state: address.state || '',
-        zipcode: Number(address.zipcode) || 0,
-        country: address.country || 'Pakistan'
+      if (!existingUser) {
+        // Create new guest customer
+        existingUser = await User.create({
+          name: `${address.firstName} ${address.lastName || ''}`.trim(),
+          email: address.email,
+          hasPassword: false,
+          isGuest: true,
+        });
+      }
+    } else if (address.phone) {
+      // Fallback: check if address exists by phone
+      const existingAddress = await Address.findOne({ phone: address.phone });
+      if (existingAddress && existingAddress.userId) {
+        existingUser = await User.findById(existingAddress.userId);
+      }
+      
+      if (!existingUser) {
+        // Create guest with placeholder email
+        existingUser = await User.create({
+          name: `${address.firstName} ${address.lastName || ''}`.trim(),
+          email: `guest_${Date.now()}@guest.local`,
+          hasPassword: false,
+          isGuest: true,
+        });
+      }
+    }
+
+    // Create or update address
+    if (existingUser) {
+      // Check if address exists for this user
+      let existingAddress = await Address.findOne({ 
+        userId: existingUser._id,
+        phone: address.phone 
       });
-      customerAddressId = newAddress._id;
+
+      if (existingAddress) {
+        // Update existing address
+        existingAddress.firstName = address.firstName || existingAddress.firstName;
+        existingAddress.lastName = address.lastName || existingAddress.lastName;
+        existingAddress.email = address.email || existingAddress.email;
+        existingAddress.street = address.street || existingAddress.street;
+        existingAddress.city = address.city || existingAddress.city;
+        existingAddress.state = address.state || existingAddress.state;
+        existingAddress.zipcode = address.zipcode || existingAddress.zipcode;
+        existingAddress.country = address.country || existingAddress.country;
+        
+        await existingAddress.save();
+        customerAddressId = existingAddress._id;
+      } else {
+        // Create new address for this customer
+        const newAddress = await Address.create({
+          userId: existingUser._id,
+          firstName: address.firstName,
+          lastName: address.lastName || '',
+          email: address.email || '',
+          phone: address.phone || '',
+          street: address.street || '',
+          city: address.city || '',
+          state: address.state || '',
+          zipcode: Number(address.zipcode) || 0,
+          country: address.country || 'Pakistan'
+        });
+        customerAddressId = newAddress._id;
+      }
     }
 
     // ✅ Step 2: Validate products and calculate total WITH PRICE STORAGE
@@ -223,11 +317,25 @@ export const createBill = async (req, res) => {
 
     // Step 3: Create the order
     const order = await Order.create({
-      userId: null, // Manual bills don't have userId
+      userId: existingUser ? existingUser._id : null,
+      customerName: `${address.firstName} ${address.lastName || ''}`.trim(),
+      customerEmail: address.email || '',
+      customerPhone: address.phone || '',
       items: validatedItems, // Now includes prices
       amount: calculatedAmount,
-      address: customerAddressId, // Link to address
-      guestAddress: address, // Store guest address data
+      address: customerAddressId,
+      shippingAddress: {
+        firstName: address.firstName,
+        lastName: address.lastName || '',
+        email: address.email || '',
+        phone: address.phone || '',
+        street: address.street || '',
+        city: address.city || '',
+        state: address.state || '',
+        zipcode: Number(address.zipcode) || 0,
+        country: address.country || 'Pakistan'
+      },
+      guestAddress: address, // Store guest address data for backward compatibility
       status: 'Order Placed',
       paymentType: paymentType || 'Cash on Delivery',
       isPaid: isPaid || false
@@ -420,10 +528,24 @@ export const createManualOrder = async (req, res) => {
     // Create new order - use guestAddress for manual orders
     const newOrder = new Order({
       userId: null, // Manual orders don't have a user account
+      customerName: `${address.firstName} ${address.lastName || ''}`.trim(),
+      customerEmail: address.email || '',
+      customerPhone: address.phone || '',
       items: validatedItems, // Now includes prices
       amount: calculatedAmount, // Use calculated amount
       address: null, // No address reference for manual orders
-      guestAddress: address, // Store address as embedded object
+      shippingAddress: {
+        firstName: address.firstName,
+        lastName: address.lastName || '',
+        email: address.email || '',
+        phone: address.phone || '',
+        street: address.street || '',
+        city: address.city || '',
+        state: address.state || '',
+        zipcode: Number(address.zipcode) || 0,
+        country: address.country || 'Pakistan'
+      },
+      guestAddress: address, // Store address as embedded object for backward compatibility
       paymentType,
       isPaid: isPaid || false,
       status: status || 'Order Placed',
@@ -447,6 +569,24 @@ export const createManualOrder = async (req, res) => {
 export const getUserOrders = async (req, res) => {
   try {
     const userId = req.userId;
+    
+    // Verify user is authenticated
+    if (!userId) {
+      return res.json({ 
+        success: false, 
+        message: 'Authentication required to view order history' 
+      });
+    }
+    
+    // Verify user has a password (is registered, not just a guest)
+    const user = await User.findById(userId);
+    if (!user || !user.hasPassword) {
+      return res.json({ 
+        success: false, 
+        message: 'Please register or login to view your order history' 
+      });
+    }
+    
     const orders = await Order.find({
       userId,
       $or: [{ paymentType: "COD" }, { isPaid: true }]
@@ -497,7 +637,6 @@ export const updateOrderStatus = async (req, res) => {
 
     const validStatuses = [
       'Order Placed',
-      'Paid',  // ✅ New payment status
       'Confirmed',
       'Packed',
       'Dispatched',

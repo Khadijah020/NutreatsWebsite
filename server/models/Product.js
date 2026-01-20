@@ -20,10 +20,6 @@ const productSchema = new mongoose.Schema({
   metaDescription: { type: String, default: '' },
   metaKeywords: { type: String, default: '' }, // SEO keywords (comma-separated)
   imageAltTexts: [{ type: String }], // ALT text for each image
-  faqs: [{
-    question: { type: String },
-    answer: { type: String }
-  }],
   jsonLdSchema: { type: Object, default: null }, // AI-generated JSON-LD structured data
   weights: [
     {

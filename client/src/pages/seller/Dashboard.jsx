@@ -601,19 +601,16 @@ const SalesChart = ({ data }) => {
             label: 'Total Sales', 
             value: data.reduce((sum, d) => sum + (d.revenue || 0), 0),
             gradient: 'from-blue-500 to-cyan-600',
-            icon: '💰'
           },
           { 
             label: 'Average', 
             value: Math.round(data.reduce((sum, d) => sum + (d.revenue || 0), 0) / data.length),
             gradient: 'from-purple-500 to-pink-600',
-            icon: '📊'
           },
           { 
             label: 'Peak', 
             value: maxValue,
             gradient: 'from-orange-500 to-red-600',
-            icon: '🚀'
           },
         ].map((stat, index) => (
           <div key={index} className="relative group">
@@ -625,7 +622,6 @@ const SalesChart = ({ data }) => {
                   <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-wider">
                     {stat.label}
                   </p>
-                  <span className="text-base sm:text-xl">{stat.icon}</span>
                 </div>
                 <p className="text-base sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                   Rs. {stat.value.toLocaleString()}

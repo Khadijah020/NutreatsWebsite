@@ -16,7 +16,7 @@ const Categories = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${backendUrl}api/category/list`);
+        const response = await fetch(`${backendUrl}/api/category/list`);
         const data = await response.json();
         if (data.success) {
           // Only show active categories
@@ -76,7 +76,7 @@ const Categories = () => {
   }
 
   return (
-    <div className="mt-16 relative w-full">
+    <div className="mt-16 relative w-full px-4 md:px-8 lg:px-12 xl:px-16">
       {/* Header */}
       <div className="text-center px-4">
         <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-900 animate-fadeInUp">
@@ -94,7 +94,7 @@ const Categories = () => {
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white shadow-lg hover:bg-green-100 transition hidden sm:flex items-center justify-center"
+            className="absolute left-4 md:left-8 lg:left-12 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white shadow-lg hover:bg-green-100 transition hidden sm:flex items-center justify-center"
           >
             <ChevronLeft className="w-6 h-6 text-green-700" />
           </button>
@@ -104,7 +104,7 @@ const Categories = () => {
         {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white shadow-lg hover:bg-green-100 transition hidden sm:flex items-center justify-center"
+            className="absolute right-4 md:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white shadow-lg hover:bg-green-100 transition hidden sm:flex items-center justify-center"
           >
             <ChevronRight className="w-6 h-6 text-green-700" />
           </button>
@@ -115,8 +115,8 @@ const Categories = () => {
           ref={scrollRef}
           className="overflow-x-auto scrollbar-hide scroll-smooth"
         >
-          <div className="flex gap-6 sm:gap-8 md:gap-10 px-6 sm:px-12 py-3">
-            {categories.map((category) => (
+          <div className="flex gap-4 sm:gap-5 md:gap-6 px-3 sm:px-4 md:px-6 lg:px-8 py-3">
+ {categories.map((category) => (
               <div
                 key={category._id}
                 onClick={() => {
@@ -127,7 +127,7 @@ const Categories = () => {
                 }}
                 className="cursor-pointer group flex flex-col items-center bg-[#EB8A14]
                            rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 
-                           min-w-[240px] sm:min-w-[280px] md:min-w-[320px] 
+                           min-w-[200px] sm:min-w-[280px] md:min-w-[320px] 
                            p-5 sm:p-6 md:p-7 border-2 border-amber-200/20 relative overflow-hidden"
               >
                 {/* Traditional decorative corner pattern */}

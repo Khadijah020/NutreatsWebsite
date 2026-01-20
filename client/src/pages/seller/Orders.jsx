@@ -91,7 +91,6 @@ const Orders = () => {
     const getStatusBadgeColor = (status) => {
         const colors = {
             'Order Placed': 'bg-blue-100 text-blue-700 border-blue-300',
-            'Paid': 'bg-green-100 text-green-700 border-green-300',
             'Confirmed': 'bg-purple-100 text-purple-700 border-purple-300',
             'Processing': 'bg-yellow-100 text-yellow-700 border-yellow-300',
             'Packed': 'bg-orange-100 text-orange-700 border-orange-300',

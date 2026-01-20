@@ -379,107 +379,6 @@ Generate only the ALT text, nothing else.`;
   }
 };
 
-// Generate FAQs for product
-const generateFAQs = async (req, res) => {
-  try {
-    const { productName, category, description } = req.body;
-
-    if (!productName) {
-      return res.json({
-        success: false,
-        message: "Product name is required",
-      });
-    }
-
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "your-gemini-api-key-here") {
-      return res.json({
-        success: false,
-        message: "Gemini API key is not configured.",
-      });
-    }
-
-    const plainDesc = description ? description.replace(/<[^>]*>/g, '').substring(0, 200) : '';
-
-    let prompt = `Generate 5 frequently asked questions (FAQs) about this product for an e-commerce website.
-
-Product Name: ${productName}
-Category: ${category || 'Food Product'}${plainDesc ? `\nDescription: ${plainDesc}` : ''}
-
-Requirements:
-- Generate exactly 5 relevant FAQs
-- Questions should be natural, common customer queries
-- Answers should be helpful, concise (2-3 sentences)
-- Include keywords naturally
-- Focus on: ingredients, storage, benefits, usage, packaging
-- Be informative and helpful
-
-Format your response EXACTLY like this:
-Q1: [question]
-A1: [answer]
-Q2: [question]
-A2: [answer]
-Q3: [question]
-A3: [answer]
-Q4: [question]
-A4: [answer]
-Q5: [question]
-A5: [answer]`;
-
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-
-    let retries = 3;
-    let lastError;
-    
-    for (let i = 0; i < retries; i++) {
-      try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        // Parse FAQs
-        const faqs = [];
-        for (let j = 1; j <= 5; j++) {
-          const qMatch = text.match(new RegExp(`Q${j}:\\s*(.+?)(?=\\n|A${j}:)`, 's'));
-          const aMatch = text.match(new RegExp(`A${j}:\\s*(.+?)(?=\\n\\n|Q${j + 1}:|$)`, 's'));
-          
-          if (qMatch && aMatch) {
-            faqs.push({
-              question: qMatch[1].trim(),
-              answer: aMatch[1].trim(),
-            });
-          }
-        }
-
-        if (faqs.length === 0) {
-          throw new Error("Failed to parse FAQs");
-        }
-
-        return res.json({
-          success: true,
-          faqs,
-        });
-      } catch (error) {
-        lastError = error;
-        
-        if ((error.message.includes('503') || error.message.includes('429')) && i < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-          continue;
-        }
-        
-        throw error;
-      }
-    }
-    
-    throw lastError;
-  } catch (error) {
-    console.error("Error generating FAQs:", error);
-    res.json({
-      success: false,
-      message: error.message || "Failed to generate FAQs",
-    });
-  }
-};
-
 // Analyze SEO score
 const analyzeSEO = async (req, res) => {
   try {
@@ -638,7 +537,7 @@ const analyzeSEO = async (req, res) => {
 // Generate JSON-LD Schema using Gemini AI
 const generateJsonLdSchema = async (req, res) => {
   try {
-    const { productName, category, description, price, offerPrice, weights, faqs } = req.body;
+    const { productName, category, description, price, offerPrice, weights } = req.body;
 
     if (!productName) {
       return res.json({
@@ -670,10 +569,6 @@ Description: ${description || 'No description provided'}`;
       prompt += `\nPrice: Rs. ${price}\nOffer Price: Rs. ${offerPrice}`;
     }
 
-    if (faqs && faqs.length > 0) {
-      prompt += `\n\nFAQs available: ${faqs.length} questions`;
-    }
-
     prompt += `\n\nRequirements:
 1. Generate a Product schema with:
    - @context and @type
@@ -682,19 +577,16 @@ Description: ${description || 'No description provided'}`;
    - aggregateRating if appropriate (4.5-5.0 stars range, 10-50 reviews)
    - Include category information
 
-2. If FAQs exist, also generate a separate FAQPage schema
-
-3. Generate a BreadcrumbList schema with:
+2. Generate a BreadcrumbList schema with:
    - Home → Category → Product
 
-4. Return ONLY valid JSON with all three schemas in this exact format:
+3. Return ONLY valid JSON with both schemas in this exact format:
 {
   "productSchema": { ... },
-  "faqSchema": { ... } or null,
   "breadcrumbSchema": { ... }
 }
 
-5. Ensure all JSON is valid and properly escaped
+4. Ensure all JSON is valid and properly escaped
 6. Use realistic values based on the product type
 7. Make it SEO-optimized and search engine friendly
 
@@ -749,7 +641,6 @@ export {
   generateCategoryDescription, 
   generateMetadata,
   generateImageAlt,
-  generateFAQs,
   analyzeSEO,
   generateJsonLdSchema
 };

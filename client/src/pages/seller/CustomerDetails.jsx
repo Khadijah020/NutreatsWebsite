@@ -12,7 +12,9 @@ import {
   Phone, 
   Mail, 
   MapPin, 
-  CreditCard 
+  CreditCard,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 
 const CustomerDetails = () => {
@@ -147,6 +149,21 @@ const CustomerDetails = () => {
                       {customer.firstName?.charAt(0)}{customer.lastName?.charAt(0)}
                     </span>
                   </div>
+                </div>
+
+                {/* Customer Type Badge */}
+                <div className="flex justify-center mb-4">
+                  {customer.isGuest ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-blue-100 text-blue-700 rounded-full border-2 border-blue-300">
+                      <UserX size={14} />
+                      Guest Customer
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-green-100 text-green-700 rounded-full border-2 border-green-300">
+                      <UserCheck size={14} />
+                      Registered Customer
+                    </span>
+                  )}
                 </div>
 
                 {/* Customer Info */}

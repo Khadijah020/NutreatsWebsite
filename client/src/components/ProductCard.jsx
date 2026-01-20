@@ -21,7 +21,7 @@ const ProductCard = ({ product }) => {
       if (!product?.category) return;
 
       try {
-        const response = await fetch(`${backendUrl}api/category/list`);
+        const response = await fetch(`${backendUrl}/api/category/list`);
         const data = await response.json();
         if (data.success) {
           const foundCategory = data.categories.find(

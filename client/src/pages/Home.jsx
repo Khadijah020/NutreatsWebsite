@@ -62,7 +62,7 @@ const Home = () => {
         schema={combinedSchema}
       />
 
-      <div className="mt-10">
+      <div className="mt-6 md:mt-8">
         <MainBanner />
         <Categories />
         <FeaturedProducts />

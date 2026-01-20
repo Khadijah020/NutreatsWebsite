@@ -5,55 +5,114 @@ import Address from "../models/Address.js";
 // Get all customers: /api/customer/all
 export const getAllCustomers = async (req, res) => {
   try {
-    // Step 1: Get all addresses
+    // Step 1: Get all users with their data
+    const users = await User.find({}, "_id name email hasPassword createdAt");
+    
+    // Step 2: Get all addresses
     const addresses = await Address.find();
-
-    // Step 2: Get all orders
+    
+    // Step 3: Get all orders
     const orders = await Order.find();
 
-    // Step 3: Get all user IDs
-    const users = await User.find({}, "_id");
-    const userIds = new Set(users.map(u => u._id.toString()));
-
-    // Create map for final customers
+    // Create map for final customers - KEY BY EMAIL (primary identifier)
     const customerMap = new Map();
 
-    for (const address of addresses) {
-      // Skip addresses linked to deleted users
-      if (address.userId && !userIds.has(address.userId.toString())) continue;
-
-      // Count orders for this address
+    // Process users first (those with email accounts)
+    for (const user of users) {
+      if (!user.email) continue;
+      
+      const key = user.email.toLowerCase();
+      
+      // Find primary address for this user
+      const userAddress = addresses.find(a => a.userId && a.userId.toString() === user._id.toString());
+      
+      // Count orders for this user (by userId OR by email)
       const customerOrders = orders.filter(order => 
-        (order.address && order.address.toString() === address._id.toString()) ||
-        (order.guestAddress?.phone === address.phone)
+        (order.userId && order.userId.toString() === user._id.toString()) ||
+        order.customerEmail?.toLowerCase() === key
       );
-
-      // Skip if there are no orders and no linked user (optional)
-      if (!address.userId && customerOrders.length === 0) continue;
-
-      customerMap.set(address._id.toString(), {
-        _id: address._id,
-        firstName: address.firstName || '',
-        lastName: address.lastName || '',
-        name: `${address.firstName || ''} ${address.lastName || ''}`.trim(),
-        email: address.email || '',
-        phone: address.phone || '',
-        street: address.street || '',
-        city: address.city || '',
-        state: address.state || '',
-        zipcode: address.zipcode?.toString() || '',
-        country: address.country || '',
+      
+      customerMap.set(key, {
+        _id: userAddress?._id || user._id,
+        userId: user._id,
+        firstName: userAddress?.firstName || user.name?.split(' ')[0] || '',
+        lastName: userAddress?.lastName || user.name?.split(' ').slice(1).join(' ') || '',
+        name: user.name || `${userAddress?.firstName || ''} ${userAddress?.lastName || ''}`.trim(),
+        email: user.email,
+        phone: userAddress?.phone || '',
+        street: userAddress?.street || '',
+        city: userAddress?.city || '',
+        state: userAddress?.state || '',
+        zipcode: userAddress?.zipcode?.toString() || '',
+        country: userAddress?.country || '',
         orderCount: customerOrders.length,
-        createdAt: address._id.getTimestamp()
+        isGuest: !user.hasPassword,
+        hasPassword: user.hasPassword || false,
+        createdAt: user.createdAt || userAddress?._id.getTimestamp()
+      });
+    }
+
+    // Process orders from customers without user accounts (legacy/manual orders)
+    for (const order of orders) {
+      if (!order.customerEmail) continue;
+      
+      const key = order.customerEmail.toLowerCase();
+      
+      // Skip if already in map (user account exists)
+      if (customerMap.has(key)) {
+        continue;
+      }
+      
+      // Find address by email
+      const customerAddress = addresses.find(a => 
+        a.email?.toLowerCase() === key
+      );
+      
+      // Count all orders for this email
+      const customerOrders = orders.filter(o => 
+        o.customerEmail?.toLowerCase() === key
+      );
+      
+      customerMap.set(key, {
+        _id: customerAddress?._id || order._id,
+        userId: null,
+        firstName: order.customerName?.split(' ')[0] || customerAddress?.firstName || '',
+        lastName: order.customerName?.split(' ').slice(1).join(' ') || customerAddress?.lastName || '',
+        name: order.customerName || `${customerAddress?.firstName || ''} ${customerAddress?.lastName || ''}`.trim(),
+        email: order.customerEmail,
+        phone: order.customerPhone || customerAddress?.phone || '',
+        street: customerAddress?.street || order.shippingAddress?.street || '',
+        city: customerAddress?.city || order.shippingAddress?.city || '',
+        state: customerAddress?.state || order.shippingAddress?.state || '',
+        zipcode: customerAddress?.zipcode?.toString() || order.shippingAddress?.zipcode?.toString() || '',
+        country: customerAddress?.country || order.shippingAddress?.country || '',
+        orderCount: customerOrders.length,
+        isGuest: true,
+        hasPassword: false,
+        createdAt: customerAddress?._id.getTimestamp() || order.createdAt
       });
     }
 
     // Convert map to array and sort by newest first
-    const customers = Array.from(customerMap.values()).sort(
+    const allCustomers = Array.from(customerMap.values()).sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
 
-    res.json({ success: true, customers });
+    // Separate into guest and registered customers
+    const guestCustomers = allCustomers.filter(c => c.isGuest);
+    const registeredCustomers = allCustomers.filter(c => !c.isGuest);
+
+    res.json({ 
+      success: true, 
+      customers: allCustomers,
+      guestCustomers,
+      registeredCustomers,
+      stats: {
+        total: allCustomers.length,
+        guests: guestCustomers.length,
+        registered: registeredCustomers.length
+      }
+    });
   } catch (error) {
     console.log(error.message);
     res.json({ success: false, message: error.message });
@@ -74,6 +133,20 @@ export const getCustomerById = async (req, res) => {
       });
     }
 
+    // Get user data if exists
+    let userData = null;
+    let isGuest = true;
+    let hasPassword = false;
+    
+    if (address.userId) {
+      const user = await User.findById(address.userId, "email hasPassword");
+      if (user) {
+        userData = user;
+        hasPassword = user.hasPassword || false;
+        isGuest = !hasPassword;
+      }
+    }
+
     // Get all orders for this customer
     // Match by address reference OR by phone number in guestAddress
     const orders = await Order.find({
@@ -88,6 +161,7 @@ export const getCustomerById = async (req, res) => {
     // Transform customer data
     const customerData = {
       _id: address._id,
+      userId: address.userId,
       name: `${address.firstName || ''} ${address.lastName || ''}`.trim(),
       email: address.email || '',
       firstName: address.firstName || '',
@@ -98,6 +172,8 @@ export const getCustomerById = async (req, res) => {
       state: address.state || '',
       zipcode: address.zipcode?.toString() || '',
       country: address.country || '',
+      isGuest: isGuest,
+      hasPassword: hasPassword,
       createdAt: address._id.getTimestamp()
     };
 

@@ -6,6 +6,18 @@ const orderSchema = new mongoose.Schema({
         ref: 'user',
         required: false,
     },
+    customerName: {
+        type: String,
+        required: true,
+    },
+    customerEmail: {
+        type: String,
+        required: false,
+    },
+    customerPhone: {
+        type: String,
+        required: false,
+    },
     items: [{
         product: {
             type: mongoose.Schema.Types.ObjectId,
@@ -46,6 +58,17 @@ const orderSchema = new mongoose.Schema({
         ref: 'address',
         required: false,
     },
+    shippingAddress: {
+        firstName: String,
+        lastName: String,
+        email: String,
+        phone: String,
+        street: String,
+        city: String,
+        state: String,
+        zipcode: Number,
+        country: String,
+    },
     guestAddress: {
         type: Object,
         required: false,
@@ -53,14 +76,13 @@ const orderSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: [
-            'Order Placed',      // Initial status
-            'Confirmed',         // Seller confirmed the order
-            'Packed',           // Ready for dispatch
-            'Dispatched',       // Out for delivery
-            'Delivered',        // Successfully delivered
-            'Paid',             // Payment received
-            'Cancelled',        // Order cancelled
-            'Returned'          // Order returned
+            'Order Placed',
+            'Confirmed',
+            'Packed',
+            'Dispatched',
+            'Delivered',
+            'Cancelled',
+            'Returned'
         ],
         default: 'Order Placed',
     },

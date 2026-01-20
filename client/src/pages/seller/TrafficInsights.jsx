@@ -18,7 +18,12 @@ import {
 } from 'lucide-react';
 
 const TrafficInsights = () => {
+  console.log('🔵 [COMPONENT] TrafficInsights component mounted');
+  
   const { axios } = useAppContext();
+  console.log('🔵 [CONTEXT] axios from context:', axios);
+  console.log('🔵 [CONTEXT] axios type:', typeof axios);
+  
   const [timeRange, setTimeRange] = useState('7days');
   const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState({
@@ -29,57 +34,105 @@ const TrafficInsights = () => {
     funnel: null,
     topProducts: null
   });
+  
   const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
+  console.log('🔵 [ENV] GA_MEASUREMENT_ID:', GA_MEASUREMENT_ID);
+  console.log('🔵 [STATE] Initial analyticsData state:', analyticsData);
+  console.log('🔵 [STATE] Initial timeRange:', timeRange);
+  console.log('🔵 [STATE] Initial loading:', loading);
 
   useEffect(() => {
+    console.log('🟢 [USEEFFECT] useEffect triggered - timeRange changed to:', timeRange);
     fetchAnalyticsData();
   }, [timeRange]);
 
   const fetchAnalyticsData = async () => {
+    console.log('🟡 [FETCH] fetchAnalyticsData started');
+    console.log('🟡 [FETCH] Current timeRange:', timeRange);
+    
     setLoading(true);
+    console.log('🟡 [FETCH] Loading set to true');
+    
     try {
-      console.log('📊 Fetching analytics data for timeRange:', timeRange);
+      console.log('🟡 [FETCH] About to make API calls...');
+      console.log('🟡 [FETCH] axios instance:', axios);
       
-      const [traffic, ecommerce, devices, sources, funnel, topProducts] = await Promise.all([
-        axios.get(`/api/analytics/traffic-overview?timeRange=${timeRange}`),
-        axios.get(`/api/analytics/ecommerce-events?timeRange=${timeRange}`),
-        axios.get(`/api/analytics/device-breakdown?timeRange=${timeRange}`),
-        axios.get(`/api/analytics/traffic-sources?timeRange=${timeRange}`),
-        axios.get(`/api/analytics/conversion-funnel?timeRange=${timeRange}`),
-        axios.get(`/api/analytics/top-products?timeRange=${timeRange}`)
-      ]);
+      // Test if axios is working
+      if (!axios) {
+        console.error('❌ [ERROR] axios is undefined or null!');
+        throw new Error('axios instance is not available');
+      }
+      
+      console.log('🟡 [FETCH] Making parallel API requests...');
+      
+      const requests = [
+        { name: 'traffic-overview', url: `/api/analytics/traffic-overview?timeRange=${timeRange}` },
+        { name: 'ecommerce-events', url: `/api/analytics/ecommerce-events?timeRange=${timeRange}` },
+        { name: 'device-breakdown', url: `/api/analytics/device-breakdown?timeRange=${timeRange}` },
+        { name: 'traffic-sources', url: `/api/analytics/traffic-sources?timeRange=${timeRange}` },
+        { name: 'conversion-funnel', url: `/api/analytics/conversion-funnel?timeRange=${timeRange}` },
+        { name: 'top-products', url: `/api/analytics/top-products?timeRange=${timeRange}` }
+      ];
+      
+      console.log('🟡 [FETCH] API endpoints to call:', requests);
+      
+      const [traffic, ecommerce, devices, sources, funnel, topProducts] = await Promise.all(
+        requests.map(async (req, index) => {
+          console.log(`🔹 [API ${index + 1}] Starting request for ${req.name}:`, req.url);
+          try {
+            const result = await axios.get(req.url);
+            console.log(`✅ [API ${index + 1}] Success for ${req.name}:`, result.data);
+            return result;
+          } catch (error) {
+            console.error(`❌ [API ${index + 1}] Failed for ${req.name}:`, error);
+            console.error(`❌ [API ${index + 1}] Error response:`, error.response?.data);
+            console.error(`❌ [API ${index + 1}] Error status:`, error.response?.status);
+            console.error(`❌ [API ${index + 1}] Error message:`, error.message);
+            throw error;
+          }
+        })
+      );
 
-      console.log('📈 Traffic data:', traffic.data);
-      console.log('🛒 Ecommerce data:', ecommerce.data);
-      console.log('📱 Devices data:', devices.data);
-      console.log('🌐 Sources data:', sources.data);
-      console.log('📊 Funnel data:', funnel.data);
-      console.log('🏆 Top Products data:', topProducts.data);
+      console.log('✅ [FETCH] All API calls completed successfully');
+      console.log('📈 [DATA] Traffic data:', traffic.data);
+      console.log('🛒 [DATA] Ecommerce data:', ecommerce.data);
+      console.log('📱 [DATA] Devices data:', devices.data);
+      console.log('🌐 [DATA] Sources data:', sources.data);
+      console.log('📊 [DATA] Funnel data:', funnel.data);
+      console.log('🏆 [DATA] Top Products data:', topProducts.data);
 
-      setAnalyticsData({
+      const newAnalyticsData = {
         traffic: traffic.data.data,
         ecommerce: ecommerce.data.data,
         devices: devices.data.data,
         sources: sources.data.data,
         funnel: funnel.data.data,
         topProducts: topProducts.data.data
-      });
+      };
       
-      console.log('✅ Analytics data set:', {
-        traffic: traffic.data.data,
-        ecommerce: ecommerce.data.data,
-        devices: devices.data.data,
-        sources: sources.data.data,
-        funnel: funnel.data.data,
-        topProducts: topProducts.data.data
-      });
+      console.log('✅ [STATE] Setting new analyticsData:', newAnalyticsData);
+      setAnalyticsData(newAnalyticsData);
+      console.log('✅ [STATE] analyticsData has been updated');
+      
     } catch (error) {
-      console.error('❌ Failed to fetch analytics:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      console.error('❌ [ERROR] Failed to fetch analytics:', error);
+      console.error('❌ [ERROR] Error name:', error.name);
+      console.error('❌ [ERROR] Error message:', error.message);
+      console.error('❌ [ERROR] Error stack:', error.stack);
+      console.error('❌ [ERROR] Error response:', error.response?.data);
+      console.error('❌ [ERROR] Error status:', error.response?.status);
+      console.error('❌ [ERROR] Full error object:', JSON.stringify(error, null, 2));
     } finally {
+      console.log('🟡 [FETCH] Setting loading to false');
       setLoading(false);
+      console.log('✅ [FETCH] fetchAnalyticsData completed');
     }
   };
+
+  console.log('🔵 [RENDER] Component rendering with:');
+  console.log('🔵 [RENDER] - loading:', loading);
+  console.log('🔵 [RENDER] - timeRange:', timeRange);
+  console.log('🔵 [RENDER] - analyticsData:', analyticsData);
 
   // Quick metrics cards - now with real data
   const trafficCards = [
@@ -121,18 +174,26 @@ const TrafficInsights = () => {
     },
   ];
 
+  console.log('🔵 [RENDER] trafficCards:', trafficCards);
+
   const deviceData = [
     { name: 'Mobile', value: `${analyticsData.devices?.mobile || 0}%`, icon: Smartphone, color: 'text-blue-600', bgColor: 'bg-blue-600', percentage: parseFloat(analyticsData.devices?.mobile) || 0 },
     { name: 'Desktop', value: `${analyticsData.devices?.desktop || 0}%`, icon: Monitor, color: 'text-purple-600', bgColor: 'bg-purple-600', percentage: parseFloat(analyticsData.devices?.desktop) || 0 },
     { name: 'Tablet', value: `${analyticsData.devices?.tablet || 0}%`, icon: Monitor, color: 'text-emerald-600', bgColor: 'bg-emerald-600', percentage: parseFloat(analyticsData.devices?.tablet) || 0 },
   ];
 
+  console.log('🔵 [RENDER] deviceData:', deviceData);
+
   const topSources = analyticsData.sources || [
     { source: 'Loading...', visits: '0', color: 'bg-gray-500' }
   ];
 
+  console.log('🔵 [RENDER] topSources:', topSources);
+
   return (
     <div className="p-3 sm:p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">
+      {console.log('🔵 [JSX] Rendering JSX')}
+      
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col gap-4">
@@ -154,7 +215,10 @@ const TrafficInsights = () => {
                 return (
                   <button
                     key={value}
-                    onClick={() => setTimeRange(value)}
+                    onClick={() => {
+                      console.log('🟢 [CLICK] Time range button clicked:', value);
+                      setTimeRange(value);
+                    }}
                     className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                       timeRange === value
                         ? 'bg-[#EB8A14] text-white shadow-sm'
@@ -167,7 +231,10 @@ const TrafficInsights = () => {
               })}
             </div>
             <button
-              onClick={() => fetchAnalyticsData()}
+              onClick={() => {
+                console.log('🟢 [CLICK] Refresh button clicked');
+                fetchAnalyticsData();
+              }}
               disabled={loading}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
@@ -186,12 +253,6 @@ const TrafficInsights = () => {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm sm:text-base text-emerald-900 mb-1">Google Analytics Active</h3>
-              {/* <p className="text-xs sm:text-sm text-emerald-700 mb-2 break-all">
-                Measurement ID: <code className="bg-emerald-100 px-2 py-0.5 rounded text-xs">{GA_MEASUREMENT_ID}</code>
-              </p> */}
-              {/* <p className="text-xs sm:text-sm text-emerald-700 mb-3">
-                ✅ <strong>Frontend tracking is working</strong> - events are being sent to Google Analytics.
-              </p> */}
               <a
                 href="https://analytics.google.com/analytics/web/#/a377867363p516673239/realtime/overview?params=_u..nav%3Dmaui"
                 target="_blank"
@@ -220,6 +281,19 @@ const TrafficInsights = () => {
         </div>
       )}
 
+      {/* Loading Debug Info */}
+      <div className="mb-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+        <h3 className="font-semibold text-blue-900 mb-2">🐛 Debug Info</h3>
+        <div className="text-xs text-blue-800 space-y-1 font-mono">
+          <p>Loading: {String(loading)}</p>
+          <p>TimeRange: {timeRange}</p>
+          <p>Traffic Data: {JSON.stringify(analyticsData.traffic)}</p>
+          <p>Ecommerce Data: {JSON.stringify(analyticsData.ecommerce)}</p>
+          <p>Devices Data: {JSON.stringify(analyticsData.devices)}</p>
+          <p>Check browser console for detailed logs</p>
+        </div>
+      </div>
+
       {/* Traffic Overview Cards */}
       <div className="mb-4 sm:mb-6">
         <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Key Performance Metrics</h2>
@@ -230,23 +304,26 @@ const TrafficInsights = () => {
       
       {/* 2x2 Grid on Mobile, 4 columns on Desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        {trafficCards.map((card, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between mb-3 sm:mb-4">
-              <div className={`${card.bgColor} p-2 sm:p-3 rounded-lg`}>
-                <card.icon className={card.textColor} size={20} />
+        {trafficCards.map((card, index) => {
+          console.log(`🔵 [CARD ${index}] Rendering card:`, card.title, 'Value:', card.value);
+          return (
+            <div
+              key={index}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between mb-3 sm:mb-4">
+                <div className={`${card.bgColor} p-2 sm:p-3 rounded-lg`}>
+                  <card.icon className={card.textColor} size={20} />
+                </div>
               </div>
+              <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-1 sm:mb-2 uppercase tracking-wide">{card.title}</p>
+              <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mb-1">
+                {loading ? <Loader className="animate-spin" size={20} /> : card.value.toLocaleString()}
+              </h3>
+              <p className="text-[10px] sm:text-sm text-gray-500">{card.description}</p>
             </div>
-            <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-1 sm:mb-2 uppercase tracking-wide">{card.title}</p>
-            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mb-1">
-              {loading ? <Loader className="animate-spin" size={20} /> : card.value.toLocaleString()}
-            </h3>
-            <p className="text-[10px] sm:text-sm text-gray-500">{card.description}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6 sm:mb-8">

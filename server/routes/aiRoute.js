@@ -4,7 +4,6 @@ import {
   generateCategoryDescription, 
   generateMetadata,
   generateImageAlt,
-  generateFAQs,
   analyzeSEO,
   generateJsonLdSchema
 } from "../controllers/aiController.js";
@@ -23,9 +22,6 @@ aiRouter.post("/generate-metadata", authSeller, generateMetadata);
 
 // Generate image ALT text with AI (seller only)
 aiRouter.post("/generate-image-alt", authSeller, generateImageAlt);
-
-// Generate FAQs with AI (seller only)
-aiRouter.post("/generate-faqs", authSeller, generateFAQs);
 
 // Analyze SEO score (seller only)
 aiRouter.post("/analyze-seo", authSeller, analyzeSEO);

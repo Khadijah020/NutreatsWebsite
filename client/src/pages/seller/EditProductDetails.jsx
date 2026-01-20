@@ -55,9 +55,9 @@ const EditProductDetails = () => {
   const [activeTab, setActiveTab] = useState("basic");
 
   const tabs = [
-    { id: "basic", label: "Basic Info", icon: "📦" },
-    { id: "seo", label: "SEO & Schema", icon: "🔍" },
-    { id: "advanced", label: "Weight Variants", icon: "⚖️" }
+    { id: "basic", label: "Basic Info" },
+    { id: "seo", label: "SEO & Schema" },
+    { id: "advanced", label: "Weight Variants" }
   ];
 
   // Check tab completion status
@@ -439,7 +439,6 @@ const EditProductDetails = () => {
         metaDescription: product.metaDescription || "",
         category: product.category || "",
         imageAltTexts: product.imageAltTexts || [],
-        faqs: product.faqs || [],
       });
 
       if (data.success) {
@@ -471,7 +470,6 @@ const EditProductDetails = () => {
         price: product.price || null,
         offerPrice: product.offerPrice || null,
         weights: product.weights || [],
-        faqs: product.faqs || [],
       });
 
       if (data.success) {
@@ -524,7 +522,6 @@ const EditProductDetails = () => {
         metaDescription: product.metaDescription || "",
         metaKeywords: product.metaKeywords || "",
         imageAltTexts: product.imageAltTexts || [],
-        faqs: product.faqs || [],
         jsonLdSchema: jsonLdSchema || null,
       };
 
@@ -860,7 +857,7 @@ const EditProductDetails = () => {
             {imagePreview.length > 0 && (
               <div className="border-t-2 border-[#EB8A14] pt-6 space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-                  <h3 className="text-lg md:text-xl font-bold text-[#EB8A14]">🖼️ Image Accessibility</h3>
+                  <h3 className="text-lg md:text-xl font-bold text-[#EB8A14]">Image Accessibility</h3>
                   <button
                     type="button"
                     onClick={generateAllAltTexts}
@@ -928,7 +925,7 @@ const EditProductDetails = () => {
             {/* SEO ANALYSIS */}
             <div className="border-t-2 border-[#EB8A14] pt-6 space-y-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-                <h3 className="text-lg md:text-xl font-bold text-[#EB8A14]">🔍 SEO Score Analysis</h3>
+                <h3 className="text-lg md:text-xl font-bold text-[#EB8A14]">SEO Score Analysis</h3>
                 <button
                   type="button"
                   onClick={analyzeSEONow}
@@ -1059,19 +1056,6 @@ const EditProductDetails = () => {
                       </h5>
                       <pre className="text-xs bg-white rounded p-3 overflow-x-auto border border-purple-200 max-h-64">
                         {JSON.stringify(jsonLdSchema.productSchema, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-
-                  {/* FAQ Schema */}
-                  {jsonLdSchema.faqSchema && (
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <h5 className="text-xs md:text-sm font-bold text-blue-700 mb-2 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                        FAQ Schema
-                      </h5>
-                      <pre className="text-xs bg-white rounded p-3 overflow-x-auto border border-blue-200 max-h-64">
-                        {JSON.stringify(jsonLdSchema.faqSchema, null, 2)}
                       </pre>
                     </div>
                   )}
@@ -1319,7 +1303,6 @@ const EditProductDetails = () => {
                       : "bg-white text-gray-600 hover:bg-gray-50 border-2 border-gray-200 hover:border-[#EB8A14] hover:shadow-md"
                   }`}
                 >
-                  <span className="text-2xl md:text-3xl">{tab.icon}</span>
                   <span className="text-center leading-tight">{tab.label}</span>
                   {isTabComplete(tab.id) && activeTab !== tab.id && (
                     <div className="absolute -top-1.5 -right-1.5 bg-green-500 text-white rounded-full p-1 shadow-md">

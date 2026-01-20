@@ -3,10 +3,11 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     name: String,
-    email: { type: String, unique: false, sparse: true }, // guest users may share emails
+    email: { type: String, unique: true, sparse: true, required: true },
     password: String,
     cartItems: { type: Object, default: {} },
-    isGuest: { type: Boolean, default: false },
+    hasPassword: { type: Boolean, default: false }, // true = registered, false = guest
+    isGuest: { type: Boolean, default: false }, // derived/analytics field
   },
   { timestamps: true }
 );

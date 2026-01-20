@@ -57,15 +57,15 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="flex items-center justify-between px-4 md:px-10 lg:px-16 py-2.5 bg-[#f3efe9] backdrop-blur-sm border-b border-gray-100 shadow-sm sticky top-0 z-50 transition-all">
+      <nav className="flex items-center justify-between px-4 md:px-6 lg:px-10 py-2 bg-[#f3efe9] backdrop-blur-sm border-b border-gray-100 shadow-sm sticky top-0 z-50 transition-all">
         
         {/* Logo */}
         <NavLink to="/" onClick={() => setOpen(false)} className="flex items-center">
-          <img src={logo} alt="logo" className="w-24 md:w-32 h-auto" />
+          <img src={logo} alt="logo" className="w-20 md:w-24 h-auto" />
         </NavLink>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-6 text-[15px]">
+        <div className="hidden md:flex items-center gap-3 lg:gap-4 text-[14px]">
           <NavLink
             to="/"
             className={({ isActive }) =>
@@ -96,13 +96,13 @@ const Navbar = () => {
           </button>
 
           {/* Search Bar */}
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 border border-gray-200 rounded-full bg-[#faf7f2] focus-within:ring-1 focus-within:ring-[#EB8A14] transition-all duration-200">
+          <div className="hidden lg:flex items-center gap-2 px-4 py-1.5 border border-gray-200 rounded-full bg-[#faf7f2] focus-within:ring-1 focus-within:ring-[#EB8A14] transition-all duration-200">
             <input
               onChange={(e) => setSearchQuery(e.target.value)}
               value={searchQuery || ""}
               type="text"
-              placeholder="Search"
-              className="bg-transparent outline-none text-sm w-28 placeholder-gray-400"
+              placeholder="Search products..."
+              className="bg-transparent outline-none text-sm w-48 xl:w-64 placeholder-gray-400"
             />
             <img src={assets.search_icon} alt="search" className="w-4 h-4 opacity-70" />
           </div>
@@ -122,14 +122,14 @@ const Navbar = () => {
           {!user ? (
             <button
               onClick={() => setShowUserLogin(true)}
-              className="px-4 py-1.5 rounded-full bg-[#EB8A14] text-white text-sm font-medium hover:bg-[#96580D] transition"
+              className="px-4 py-1.5 rounded-full bg-[#EB8A14] text-white text-sm font-medium hover:bg-[#96580D] transition whitespace-nowrap"
             >
               Login
             </button>
           ) : (
             <div className="relative group">
-              <img src={assets.profile_icon} className="w-8 cursor-pointer" alt="profile" />
-              <ul className="hidden group-hover:block absolute top-8 right-0 bg-white border border-gray-100 shadow-md rounded-md py-1 w-32 text-sm z-50">
+              <img src={assets.profile_icon} className="w-7 cursor-pointer" alt="profile" />
+              <ul className="hidden group-hover:block absolute top-7 right-0 bg-white border border-gray-100 shadow-md rounded-md py-1 w-32 text-sm z-50">
                 <li
                   onClick={() => navigate("my-orders")}
                   className="px-3 py-1.5 hover:bg-[#EB8A14] hover:text-white cursor-pointer"
@@ -169,12 +169,12 @@ const Navbar = () => {
         onClick={() => setOpen(false)}
         className={`fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden transition-opacity duration-300
         ${open ? "opacity-50 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-        style={{ top: "58px" }}
+        style={{ top: "54px" }}
       ></div>
 
       {/* Drawer */}
       <div
-        className={`fixed top-[58px] right-0 w-[75%] max-w-[300px] h-[calc(100vh-58px)]
+        className={`fixed top-[54px] right-0 w-[75%] max-w-[300px] h-[calc(100vh-54px)]
         bg-[#faf7f2] shadow-2xl flex flex-col gap-1 px-5 py-4 text-gray-700 font-medium text-sm 
         md:hidden z-50 overflow-y-auto transform transition-transform duration-300 ease-in-out
         ${open ? "translate-x-0" : "translate-x-full"}`}

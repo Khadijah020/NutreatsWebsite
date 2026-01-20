@@ -45,9 +45,9 @@ const AddProduct = () => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
   const tabs = [
-    { id: "basic", label: "Basic Info", icon: "📦" },
-    { id: "seo", label: "SEO & Schema", icon: "🔍" },
-    { id: "advanced", label: "Weight Variants", icon: "⚖️" }
+    { id: "basic", label: "Basic Info" },
+    { id: "seo", label: "SEO & Schema" },
+    { id: "advanced", label: "Weight Variants" }
   ];
 
   // Check tab completion status
@@ -67,7 +67,7 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${backendUrl}api/category/list`);
+        const response = await fetch(`${backendUrl}/api/category/list`);
         const data = await response.json();
         if (data.success) {
           const activeCategories = data.categories.filter(cat => cat.isActive);
@@ -691,7 +691,7 @@ const AddProduct = () => {
             {files.some(file => file !== null) && (
               <div className="border-t-2 border-[#EB8A14] pt-6 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <h3 className="text-lg font-bold text-[#EB8A14]">🖼️ Image Accessibility</h3>
+                  <h3 className="text-lg font-bold text-[#EB8A14]">Image Accessibility</h3>
                   <button
                     type="button"
                     onClick={generateAllAltTexts}
@@ -759,7 +759,7 @@ const AddProduct = () => {
             {/* SEO ANALYSIS */}
             <div className="border-t-2 border-[#EB8A14] pt-6 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                <h3 className="text-lg font-bold text-[#EB8A14]">🔍 SEO Score Analysis</h3>
+                <h3 className="text-lg font-bold text-[#EB8A14]">SEO Score Analysis</h3>
                 <button
                   type="button"
                   onClick={analyzeSEONow}
@@ -890,19 +890,6 @@ const AddProduct = () => {
                       </h5>
                       <pre className="text-xs bg-white rounded p-3 overflow-x-auto border border-purple-200 max-h-64">
                         {JSON.stringify(jsonLdSchema.productSchema, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-
-                  {/* FAQ Schema */}
-                  {jsonLdSchema.faqSchema && (
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <h5 className="text-sm font-bold text-blue-700 mb-2 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                        FAQ Schema
-                      </h5>
-                      <pre className="text-xs bg-white rounded p-3 overflow-x-auto border border-blue-200 max-h-64">
-                        {JSON.stringify(jsonLdSchema.faqSchema, null, 2)}
                       </pre>
                     </div>
                   )}
@@ -1056,7 +1043,6 @@ const AddProduct = () => {
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                  <span className="text-2xl">{tab.icon}</span>
                   <span className="text-center leading-tight">{tab.label}</span>
                   {isTabComplete(tab.id) && activeTab !== tab.id && (
                     <CheckCircle size={14} className="absolute top-2 right-2 text-green-500 bg-white rounded-full" />
@@ -1078,7 +1064,6 @@ const AddProduct = () => {
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
                   }`}
                 >
-                  <span className="text-3xl">{tab.icon}</span>
                   <span className="text-center">{tab.label}</span>
                   {isTabComplete(tab.id) && activeTab !== tab.id && (
                     <CheckCircle size={18} className="absolute top-3 right-3 text-green-500 bg-white rounded-full" />
@@ -1106,7 +1091,7 @@ const AddProduct = () => {
             }`}
           >
             {loading && <span className="animate-spin border-3 border-white border-t-transparent rounded-full w-5 h-5"></span>}
-            {loading ? "Adding Product..." : "🚀 Add Product"}
+            {loading ? "Adding Product..." : "Add Product"}
           </button>
         </div>
       </form>

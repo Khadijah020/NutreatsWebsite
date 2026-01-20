@@ -40,7 +40,6 @@ const OrderDetails = () => {
       textColor: 'text-blue-700',
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200',
-      icon: '📦',
       description: 'Order has been placed'
     },
     { 
@@ -50,7 +49,6 @@ const OrderDetails = () => {
       textColor: 'text-purple-700',
       bgColor: 'bg-purple-50',
       borderColor: 'border-purple-200',
-      icon: '✓',
       description: 'Order confirmed by seller'
     },
     { 
@@ -60,7 +58,6 @@ const OrderDetails = () => {
       textColor: 'text-orange-700',
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-200',
-      icon: '📦',
       description: 'Ready for dispatch'
     },
     { 
@@ -70,7 +67,6 @@ const OrderDetails = () => {
       textColor: 'text-indigo-700',
       bgColor: 'bg-indigo-50',
       borderColor: 'border-indigo-200',
-      icon: '🚚',
       description: 'Out for delivery'
     },
     { 
@@ -80,18 +76,7 @@ const OrderDetails = () => {
       textColor: 'text-teal-700',
       bgColor: 'bg-teal-50',
       borderColor: 'border-teal-200',
-      icon: '✓',
       description: 'Successfully delivered'
-    },
-    { 
-      value: 'Paid', 
-      label: 'Paid', 
-      color: 'from-emerald-400 to-emerald-600',
-      textColor: 'text-emerald-700',
-      bgColor: 'bg-emerald-50',
-      borderColor: 'border-emerald-200',
-      icon: '💰',
-      description: 'Payment confirmed'
     },
     { 
       value: 'Cancelled', 
@@ -100,7 +85,6 @@ const OrderDetails = () => {
       textColor: 'text-red-700',
       bgColor: 'bg-red-50',
       borderColor: 'border-red-200',
-      icon: '✕',
       description: 'Order cancelled'
     },
     { 
@@ -110,7 +94,6 @@ const OrderDetails = () => {
       textColor: 'text-gray-700',
       bgColor: 'bg-gray-50',
       borderColor: 'border-gray-200',
-      icon: '↩',
       description: 'Order returned'
     },
   ];
@@ -162,6 +145,24 @@ const OrderDetails = () => {
       toast.error(error.message);
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const togglePaymentStatus = async () => {
+    const newPaidStatus = !order.isPaid;
+    try {
+      const { data } = await axios.post("/api/order/toggle-payment", { 
+        orderId: id,
+        isPaid: newPaidStatus
+      });
+      if (data.success) {
+        toast.success(data.message);
+        setOrder(data.order);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
     }
   };
 
@@ -373,7 +374,7 @@ const OrderDetails = () => {
                       <option value="" className="text-gray-400">Choose status...</option>
                       {orderStatuses.map((status) => (
                         <option key={status.value} value={status.value}>
-                          {status.icon} {status.label} - {status.description}
+                          {status.label} - {status.description}
                         </option>
                       ))}
                     </select>
@@ -382,7 +383,6 @@ const OrderDetails = () => {
                   {selectedStatus && (
                     <div className={`mt-3 p-4 ${getStatusInfo(selectedStatus).bgColor} ${getStatusInfo(selectedStatus).borderColor} border-2 rounded-xl`}>
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">{getStatusInfo(selectedStatus).icon}</span>
                         <div>
                           <p className={`font-bold ${getStatusInfo(selectedStatus).textColor}`}>
                             {getStatusInfo(selectedStatus).label}
@@ -474,6 +474,19 @@ const OrderDetails = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {/* Payment Status Toggle */}
+            <button
+              onClick={togglePaymentStatus}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold border-2 transition-all shadow-md hover:shadow-lg ${
+                order.isPaid 
+                  ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100' 
+                  : 'bg-yellow-50 text-yellow-700 border-yellow-300 hover:bg-yellow-100'
+              }`}
+            >
+              <CreditCard size={18} />
+              <span>{order.isPaid ? 'Paid' : 'Unpaid'}</span>
+            </button>
+
             {/* Generate Packing Slip Button */}
             <button
               onClick={generatePackingSlip}
@@ -494,7 +507,6 @@ const OrderDetails = () => {
 
             {/* Current Status Badge */}
             <div className={`px-6 py-3 rounded-2xl font-bold border-2 ${currentStatusInfo.bgColor} ${currentStatusInfo.textColor} ${currentStatusInfo.borderColor} shadow-md flex items-center gap-2`}>
-              <span className="text-xl">{currentStatusInfo.icon}</span>
               <span>{currentStatusInfo.label}</span>
             </div>
           </div>
@@ -525,34 +537,36 @@ const OrderDetails = () => {
                     return (
                       <div
                         key={index}
-                        className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-md hover:shadow-lg transition-all border-2 border-transparent hover:border-[#EB8A14]/30"
+                        className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-2xl bg-white shadow-md hover:shadow-lg transition-all border-2 border-transparent hover:border-[#EB8A14]/30"
                       >
-                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shrink-0 shadow-md border-2 border-[#EB8A14]/20">
-                          <img
-                            src={item.image || item.product?.image?.[0] || "/placeholder.png"}
-                            alt={item.name || item.product?.name || "Product"}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                          <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shrink-0 shadow-md border-2 border-[#EB8A14]/20">
+                            <img
+                              src={item.image || item.product?.image?.[0] || "/placeholder.png"}
+                              alt={item.name || item.product?.name || "Product"}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
 
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-gray-800 mb-2 truncate text-lg">
-                            {item.name || item.product?.name}
-                          </h4>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-gray-800 mb-2 text-base sm:text-lg break-words line-clamp-2">
+                              {item.name || item.product?.name}
+                            </h4>
 
-                          <div className="flex flex-wrap items-center gap-2">
-                            {item.weight && (
-                              <span className="px-3 py-1 bg-gradient-to-r from-[#EB8A14] to-[#d97706] text-white rounded-full text-xs font-bold shadow-md">
-                                {item.weight}
+                            <div className="flex flex-wrap items-center gap-2">
+                              {item.weight && (
+                                <span className="px-3 py-1 bg-gradient-to-r from-[#EB8A14] to-[#d97706] text-white rounded-full text-xs font-bold shadow-md">
+                                  {item.weight}
+                                </span>
+                              )}
+                              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold">
+                                Qty: {item.quantity}
                               </span>
-                            )}
-                            <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold">
-                              Qty: {item.quantity}
-                            </span>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="text-right">
+                        <div className="text-left sm:text-right w-full sm:w-auto sm:ml-auto">
                           <p className="text-xl font-bold bg-gradient-to-r from-[#EB8A14] to-[#d97706] bg-clip-text text-transparent">
                             Rs. {itemTotal.toFixed(2)}
                           </p>
@@ -592,8 +606,7 @@ const OrderDetails = () => {
                     const statusInfo = getStatusInfo(history.status);
                     return (
                       <div key={index} className={`flex gap-4 p-4 rounded-2xl ${statusInfo.bgColor} border-2 ${statusInfo.borderColor}`}>
-                        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white shadow-md text-2xl">
-                          {statusInfo.icon}
+                        <div className={`flex items-center justify-center w-3 h-3 mt-2 rounded-full ${statusInfo.textColor.replace('text-', 'bg-')} shadow-md`}>
                         </div>
                         <div className="flex-1">
                           <p className={`font-bold ${statusInfo.textColor} mb-1`}>

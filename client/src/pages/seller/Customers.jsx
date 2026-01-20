@@ -2,20 +2,30 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import toast from 'react-hot-toast';
-import { Users, Search, ShoppingBag, Phone, Mail, MapPin, ChevronRight } from 'lucide-react';
+import { Users, Search, ShoppingBag, Phone, Mail, MapPin, ChevronRight, UserCheck, UserX } from 'lucide-react';
 
 const Customers = () => {
   const { axios } = useAppContext();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
+  const [guestCustomers, setGuestCustomers] = useState([]);
+  const [registeredCustomers, setRegisteredCustomers] = useState([]);
+  const [stats, setStats] = useState({ total: 0, guests: 0, registered: 0 });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'registered', 'guest'
 
   const fetchCustomers = async () => {
     try {
       const { data } = await axios.get('/api/customer/all');
-      if (data.success) setCustomers(data.customers);
-      else toast.error(data.message);
+      if (data.success) {
+        setCustomers(data.customers);
+        setGuestCustomers(data.guestCustomers || []);
+        setRegisteredCustomers(data.registeredCustomers || []);
+        setStats(data.stats || { total: data.customers.length, guests: 0, registered: 0 });
+      } else {
+        toast.error(data.message);
+      }
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -27,7 +37,21 @@ const Customers = () => {
     fetchCustomers();
   }, []);
 
-  const filteredCustomers = customers.filter(customer =>
+  // Get current customers based on active tab
+  const getCurrentCustomers = () => {
+    switch (activeTab) {
+      case 'guest':
+        return guestCustomers;
+      case 'registered':
+        return registeredCustomers;
+      default:
+        return customers;
+    }
+  };
+
+  const currentCustomers = getCurrentCustomers();
+
+  const filteredCustomers = currentCustomers.filter(customer =>
     `${customer.firstName} ${customer.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -73,15 +97,58 @@ const Customers = () => {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5 sm:mb-6">
           {[
-            { label: "Total", value: customers.length },
-            { label: "With Email", value: customers.filter(c => c.email).length },
-            { label: "Active", value: customers.filter(c => c.orderCount > 0).length },
+            { label: "Total", value: stats.total, color: "text-[#EB8A14]" },
+            { label: "Registered", value: stats.registered, color: "text-green-600" },
+            { label: "Guests", value: stats.guests, color: "text-blue-600" },
           ].map((item, i) => (
             <div key={i} className="bg-white rounded-xl sm:rounded-2xl p-4 border border-gray-300 shadow-sm">
               <p className="text-[11px] sm:text-sm text-gray-600 mb-1">{item.label}</p>
-              <p className="text-lg sm:text-2xl font-bold text-[#EB8A14]">{item.value}</p>
+              <p className={`text-lg sm:text-2xl font-bold ${item.color}`}>{item.value}</p>
             </div>
           ))}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-xl border border-gray-300">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${
+              activeTab === 'all'
+                ? 'bg-white text-[#EB8A14] shadow'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-1.5">
+              <Users size={16} />
+              <span>All ({stats.total})</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('registered')}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${
+              activeTab === 'registered'
+                ? 'bg-white text-green-600 shadow'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-1.5">
+              <UserCheck size={16} />
+              <span>Registered ({stats.registered})</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('guest')}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${
+              activeTab === 'guest'
+                ? 'bg-white text-blue-600 shadow'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-1.5">
+              <UserX size={16} />
+              <span>Guests ({stats.guests})</span>
+            </div>
+          </button>
         </div>
 
         {/* Customer List */}
@@ -110,9 +177,20 @@ const Customers = () => {
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                        {customer.firstName} {customer.lastName}
-                      </h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                          {customer.firstName} {customer.lastName}
+                        </h3>
+                        {customer.isGuest ? (
+                          <span className="px-2 py-0.5 text-[10px] sm:text-xs font-medium bg-blue-100 text-blue-700 rounded-full border border-blue-300">
+                            Guest
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 text-[10px] sm:text-xs font-medium bg-green-100 text-green-700 rounded-full border border-green-300">
+                            Registered
+                          </span>
+                        )}
+                      </div>
 
                       <div className="flex flex-wrap gap-2 text-[11px] sm:text-sm text-gray-600">
                         {customer.phone && (

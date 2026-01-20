@@ -105,7 +105,7 @@ const ProductDetails = () => {
 
   const fetchCategoryData = async (categoryName) => {
     try {
-      const response = await fetch(`${backendUrl}api/category/list`);
+      const response = await fetch(`${backendUrl}/api/category/list`);
       const data = await response.json();
       if (data.success) {
         const foundCategory = data.categories.find(
@@ -152,10 +152,10 @@ const ProductDetails = () => {
       addToCart(product._id, selectedWeight);
       updateCartItem(key, (cartItems[key] || 0) + 1);
 
-      // 📊 Track add to cart in analytics
+      // Track add to cart in analytics
       trackAddToCart(product, 1, selectedWeight);
 
-      showToast('add', '🎉 Added to cart!');
+      showToast('add', 'Added to cart!');
     } catch (err) {
       console.error("❌ Add to cart failed:", err);
     }
@@ -166,9 +166,9 @@ const ProductDetails = () => {
     
     if (newQuantity <= 0) {
       updateCartItem(cartKey, 0);
-      // 📊 Track remove from cart
+      // Track remove from cart
       trackRemoveFromCart(product, previousQuantity, selectedWeight);
-      showToast('remove', '🗑️ Removed from cart');
+      showToast('remove', 'Removed from cart');
     } else {
       updateCartItem(cartKey, newQuantity);
       // 📊 Track quantity change
@@ -183,13 +183,12 @@ const ProductDetails = () => {
 
   // Enhanced Product Schema with more SEO details
   // Use stored JSON-LD schema if available, otherwise generate dynamically
-  let productSchema, breadcrumbSchema, faqSchema;
+  let productSchema, breadcrumbSchema;
 
   if (product.jsonLdSchema) {
     // Use AI-generated schema stored in the database
     productSchema = product.jsonLdSchema.productSchema || null;
     breadcrumbSchema = product.jsonLdSchema.breadcrumbSchema || null;
-    faqSchema = product.jsonLdSchema.faqSchema || null;
   }
 
   // Fallback to dynamic generation if no stored schema
@@ -277,25 +276,8 @@ const ProductDetails = () => {
   };
   }
 
-  // FAQPage Schema - helps Google show FAQs in search results
-  if (!faqSchema && product.faqs && product.faqs.length > 0) {
-    faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": product.faqs.map(faq => ({
-      "@type": "Question",
-      "name": faq.question,
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": faq.answer
-      }
-    }))
-  };
-  }
-
-  // Combine all schemas
+  // Combine schemas
   const allSchemas = [productSchema, breadcrumbSchema];
-  if (faqSchema) allSchemas.push(faqSchema);
 
   const combinedSchema = {
     "@context": "https://schema.org",
@@ -578,32 +560,6 @@ const ProductDetails = () => {
             </div>
           </div>
         </article>
-
-        {/* FAQs Section */}
-        {product.faqs && product.faqs.length > 0 && (
-          <section className="mt-12 max-w-6xl mx-auto bg-[#bfd9bde0] rounded-2xl border-2 border-[#EB8A14] p-6 md:p-8 shadow-lg">
-            <h2 className="text-2xl md:text-3xl font-serif tracking-tight mb-6 text-[#0a6134] flex items-center gap-2">
-              <span className="text-3xl">❓</span>
-              Frequently Asked Questions
-            </h2>
-            <div className="space-y-4">
-              {product.faqs.map((faq, index) => (
-                <details 
-                  key={index} 
-                  className="group bg-[#e9a654] rounded-xl border-2 border-[#EB8A14] overflow-hidden transition-all duration-300"
-                >
-                  <summary className="cursor-pointer px-5 py-4 font-semibold text-[#0a6134] hover:bg-[#EB8A14] hover:text-white transition-colors duration-300 flex items-start gap-3 list-none">
-                    <span className="mt-0.5 text-[#EB8A14] group-hover:text-white transition-colors">▸</span>
-                    <span className="flex-1">{faq.question}</span>
-                  </summary>
-                  <div className="px-5 py-4 bg-white border-t-2 border-[#EB8A14]">
-                    <p className="text-[#785427] leading-relaxed whitespace-pre-line">{faq.answer}</p>
-                  </div>
-                </details>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
