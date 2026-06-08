@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
 import { ArrowLeft } from "lucide-react";
+import { fetchAPI } from '../utils/api';
 
 const ProductCategory = () => {
   const { products } = useAppContext();
@@ -13,14 +14,11 @@ const ProductCategory = () => {
 
   const {navigate} = useAppContext();
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
-
   useEffect(() => {
     const fetchCategory = async () => {
       try {
         
-        const response = await fetch(`${backendUrl}/api/category/list`);
-        const data = await response.json();
+        const data = await fetchAPI('/api/category/list');
         
         if (data.success) {
           const foundCategory = data.categories.find(
@@ -36,7 +34,7 @@ const ProductCategory = () => {
     };
 
     fetchCategory();
-  }, [category, backendUrl]);
+  }, [category]);
 
   // 🔍 Filter products and log them
   const filteredProducts = products.filter(

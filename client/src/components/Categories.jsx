@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { fetchAPI } from '../utils/api';
 
 const Categories = () => {
   const { navigate } = useAppContext();
@@ -10,14 +11,11 @@ const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
-
   // Fetch categories from API
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${backendUrl}/api/category/list`);
-        const data = await response.json();
+        const data = await fetchAPI('/api/category/list');
         if (data.success) {
           // Only show active categories
           const activeCategories = data.categories.filter(cat => cat.isActive);
@@ -31,7 +29,7 @@ const Categories = () => {
     };
 
     fetchCategories();
-  }, [backendUrl]);
+  }, []);
 
   const updateScrollButtons = () => {
     const container = scrollRef.current;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useAppContext } from "../context/AppContext";
+import { fetchAPI } from '../utils/api';
 
 const ProductCard = ({ product }) => {
   const { currency, addToCart, removeFromCart, cartItems, navigate } = useAppContext();
@@ -13,16 +14,13 @@ const ProductCard = ({ product }) => {
     product?.weights?.[0] || null
   );
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
   // Fetch category name
   useEffect(() => {
     const load = async () => {
       if (!product?.category) return;
 
       try {
-        const response = await fetch(`${backendUrl}/api/category/list`);
-        const data = await response.json();
+        const data = await fetchAPI('/api/category/list');
         if (data.success) {
           const foundCategory = data.categories.find(
             (c) => c.name.toLowerCase() === product.category.toLowerCase()
@@ -35,7 +33,7 @@ const ProductCard = ({ product }) => {
     };
 
     load();
-  }, [product?.category, backendUrl]);
+  }, [product?.category]);
 
   if (!product) return null;
 
@@ -189,7 +187,7 @@ const ProductCard = ({ product }) => {
         }
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="group relative bg-[#bfd9bde0] rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-pointer overflow-hidden h-full min-h-[340px] flex flex-col border border-[#EB8A14]"
+        className="group relative bg-[#bfd9bde0] rounded-2xl p-3 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-pointer overflow-hidden h-full flex flex-col border border-[#EB8A14]"
         style={{
           transform: isHovered
             ? "perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-8px)"
@@ -207,7 +205,7 @@ const ProductCard = ({ product }) => {
         )}
 
         {/* Image */}
-        <div className="relative w-full aspect-square mb-4 overflow-hidden rounded-xl bg-white/90 border border-[#EB8A14]">
+        <div className="relative w-full aspect-square mb-2 overflow-hidden rounded-xl bg-white/90 border border-[#EB8A14]">
           <img
             src={product.image[0]}
             alt={product.name}
@@ -237,27 +235,27 @@ const ProductCard = ({ product }) => {
         </div>
 
         {/* Product Info */}
-        <p className="text-[#785427] text-xs uppercase tracking-wide">
+        <p className="text-[#785427] text-xs uppercase tracking-wide mb-1">
           {categoryData?.name || product.category}
         </p>
 
         <h3
-          className="text-[#0a6134] font-bold text-base line-clamp-2"
+          className="text-[#0a6134] font-bold text-sm line-clamp-2 mb-2"
           title={product.name}
         >
           {product.name}
         </h3>
 
         {/* Prices */}
-        <div className="mt-3">
+        <div className="mt-auto">
           {/* ✔ CLEAN “starting from” text */}
           {product.weights?.length > 1 && (
-            <p className="text-xs text-gray-600 mt-0.5">
+            <p className="text-xs text-gray-600 mb-0.5">
               Starting from{" "}
               
             </p>
           )}
-          <p className="text-xl font-bold text-[#96580D]">
+          <p className="text-lg font-bold text-[#96580D]">
             {currency}
             {baseOfferPrice}
           </p>

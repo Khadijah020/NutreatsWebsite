@@ -22,10 +22,10 @@ const OrderSuccess = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-8 md:py-20">
+    <div className="min-h-screen bg-[#e6dbcee0] flex items-center justify-center px-4 py-8 md:py-20">
       <div className="max-w-2xl w-full">
         {/* Success Card */}
-        <div className="bg-white rounded-2xl p-8 shadow-xl border-4 border-[#EB8A14] text-center">
+        <div className="bg-[#bfd9bde0] rounded-2xl p-8 shadow-xl border-4 border-[#EB8A14] text-center">
           {/* Success Icon */}
           <div className="mb-6 flex justify-center">
             <div className="bg-green-100 rounded-full p-4">
@@ -47,8 +47,8 @@ const OrderSuccess = () => {
          
 
           {/* Info Box */}
-          <div className="bg-[#bfd9bde0] border-2 border-[#EB8A14] rounded-xl p-4 mb-6">
-            <p className="text-sm text-[#0a6134] font-medium">
+          <div className="bg-[#e2c4a0] border-2 border-[#EB8A14] rounded-xl p-4 mb-6">
+            <p className="text-sm text-[#0a6134] font-semibold">
               📦 Your order will be delivered within 3-5 business days
             </p>
           </div>
@@ -155,7 +155,7 @@ const OrderSuccess = () => {
           {/* Continue Shopping Button */}
           <button
             onClick={() => navigate('/products')}
-            className="w-full bg-gradient-to-r from-[#EB8A14] to-[#96580D] hover:from-[#96580D] hover:to-[#EB8A14] text-white font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+            className="w-full bg-[#EB8A14] hover:bg-[#e28717] text-white font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
           >
             Continue Shopping
           </button>

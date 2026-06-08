@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Pencil, Trash2, Plus, X, Upload, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import toast from 'react-hot-toast';
+import { fetchAPI } from '../../utils/api';
 
 export default function CategoryManagement() {
   const { axios } = useAppContext();
@@ -21,16 +22,13 @@ export default function CategoryManagement() {
     isActive: true
   });
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
-
   useEffect(() => {
     fetchCategories();
   }, []);
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${backendUrl}/api/category/list`);
-      const data = await response.json();
+      const data = await fetchAPI('/api/category/list');
       if (data.success) {
         setCategories(data.categories);
       }
@@ -61,9 +59,9 @@ export default function CategoryManagement() {
     e.preventDefault();
 
     try {
-      const url = editMode
-        ? `${backendUrl}/api/category/update/${currentCategory._id}`
-        : `${backendUrl}/api/category/add`;
+      const endpoint = editMode
+        ? `/api/category/update/${currentCategory._id}`
+        : `/api/category/add`;
 
       const method = editMode ? 'PUT' : 'POST';
 
@@ -76,13 +74,11 @@ export default function CategoryManagement() {
         formDataToSend.append('image', imageFile);
       }
 
-      const response = await fetch(url, {
+      const data = await fetchAPI(endpoint, {
         method,
         credentials: 'include',
         body: formDataToSend
       });
-
-      const data = await response.json();
 
       if (data.success) {
         alert(data.message);
@@ -114,12 +110,10 @@ export default function CategoryManagement() {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
     try {
-      const response = await fetch(`${backendUrl}/api/category/delete/${id}`, {
+      const data = await fetchAPI(`/api/category/delete/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
-
-      const data = await response.json();
 
       if (data.success) {
         alert(data.message);
@@ -152,11 +146,10 @@ export default function CategoryManagement() {
     }));
 
     try {
-      await fetch(`${backendUrl}/api/category/reorder`, {
+      await fetchAPI('/api/category/reorder', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ order }),
+        body: JSON.stringify({ order })
       });
     } catch (error) {
       console.error('Error reordering categories:', error);

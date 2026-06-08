@@ -2,20 +2,23 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppContext } from '../../context/AppContext'
 import toast from 'react-hot-toast'
-import { Package, ChevronRight, Search, Calendar, CreditCard, User, Filter } from 'lucide-react'
+import { Package, ChevronRight, Search, Calendar, CreditCard, User, Filter, Clock } from 'lucide-react'
 
 const Orders = () => {
     const { currency, axios } = useAppContext()
     const navigate = useNavigate()
-    const [searchParams] = useSearchParams()
+    const [searchParams, setSearchParams] = useSearchParams()
     const [orders, setOrders] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('all')
+    const [timeRange, setTimeRange] = useState('all')
     const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+    const [initialFetch, setInitialFetch] = useState(false)
 
-    const fetchOrders = async () => {
+    const fetchOrders = async (selectedTimeRange = timeRange) => {
         try {
-            const { data } = await axios.get('/api/order/sellerOrders')
+            const params = selectedTimeRange !== 'all' ? `?timeRange=${selectedTimeRange}` : ''
+            const { data } = await axios.get(`/api/order/sellerOrders${params}`)
             if (data.success) setOrders(data.orders)
             else toast.error(data.message)
         } catch (error) {
@@ -23,12 +26,30 @@ const Orders = () => {
         }
     }
 
-    useEffect(() => { fetchOrders() }, [])
+    useEffect(() => {
+        // Only fetch if not initial URL-based fetch
+        if (initialFetch) {
+            fetchOrders(timeRange)
+        }
+    }, [timeRange])
 
     // Set filter based on URL parameters when component mounts or URL changes
     useEffect(() => {
         const statusParam = searchParams.get('status')
         const paidParam = searchParams.get('paid')
+        const timeRangeParam = searchParams.get('timeRange')
+        
+        // Set time range if provided in URL
+        if (timeRangeParam && ['7days', '30days', '6months', '1year'].includes(timeRangeParam)) {
+            setTimeRange(timeRangeParam)
+            fetchOrders(timeRangeParam)
+        } else {
+            // If no timeRange in URL, fetch all orders
+            setTimeRange('all')
+            fetchOrders('all')
+        }
+        
+        setInitialFetch(true)
 
         if (statusParam) {
             // Handle multiple statuses separated by comma (e.g., "Cancelled,Returned")
@@ -176,6 +197,23 @@ const Orders = () => {
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full pl-9 pr-3 py-2 sm:py-2.5 border-4 border-[#EB8A14] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EB8A14] focus:border-transparent text-xs sm:text-sm bg-white text-black placeholder-gray-500"
                             />
+                        </div>
+                        
+                        {/* Time Range Filter */}
+                        <div className="relative w-full sm:w-auto sm:min-w-[180px]">
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none z-10" size={16} />
+                            <select
+                                value={timeRange}
+                                onChange={(e) => setTimeRange(e.target.value)}
+                                className="w-full appearance-none pl-10 pr-10 py-2 sm:py-2.5 border-[3px] border-emerald-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-600 text-xs sm:text-sm font-bold bg-gradient-to-br from-emerald-50 to-green-50 text-emerald-900 cursor-pointer shadow-md hover:shadow-lg hover:shadow-emerald-200/50 hover:border-emerald-600 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                <option value="all">All Time</option>
+                                <option value="7days">Last 7 Days</option>
+                                <option value="30days">Last 30 Days</option>
+                                <option value="6months">Last 6 Months</option>
+                                <option value="1year">Last 1 Year</option>
+                            </select>
+                            <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none rotate-90" size={16} />
                         </div>
 
                         {/* Filter Dropdown */}

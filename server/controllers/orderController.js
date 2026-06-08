@@ -455,8 +455,36 @@ export const getOrderById = async (req, res) => {
 // Get All Orders for Seller: /api/order/sellerOrders
 export const getSellerOrders = async (req, res) => {
   try {
-    // Fetch ALL orders (including manual orders without userId)
-    const orders = await Order.find({})
+    const { timeRange } = req.query;
+    
+    // Calculate date filter if timeRange is provided
+    let dateFilter = {};
+    if (timeRange) {
+      const now = new Date();
+      let filterStartDate = new Date();
+      
+      switch (timeRange) {
+        case '7days':
+          filterStartDate.setDate(now.getDate() - 7);
+          break;
+        case '30days':
+          filterStartDate.setDate(now.getDate() - 30);
+          break;
+        case '6months':
+          filterStartDate.setMonth(now.getMonth() - 6);
+          break;
+        case '1year':
+          filterStartDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      if (timeRange) {
+        dateFilter = { createdAt: { $gte: filterStartDate } };
+      }
+    }
+    
+    // Fetch orders with optional date filter
+    const orders = await Order.find(dateFilter)
       .populate('items.product')
       .populate('address') // Populate address reference if it exists
       .sort({ createdAt: -1 })

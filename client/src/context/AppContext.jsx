@@ -12,6 +12,8 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
+// Bypass ngrok browser warning for API calls
+axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
 
 export const AppContext = createContext();
 

@@ -4,6 +4,7 @@ import { useAppContext } from '../../context/AppContext';
 import toast from 'react-hot-toast';
 import { Pencil, ChevronDown, ChevronRight, Search, Trash2, Package, MoreVertical, Edit3, Save, X } from 'lucide-react';
 import PriceListGenerator from '../../components/PriceListGenerator';
+import { fetchAPI } from '../../utils/api';
 
 const ProductList = () => {
   const { products, currency, axios, fetchProducts } = useAppContext();
@@ -21,14 +22,11 @@ const ProductList = () => {
   const [editedProducts, setEditedProducts] = useState({});
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
-
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${backendUrl}/api/category/list`);
-        const data = await response.json();
+        const data = await fetchAPI('/api/category/list');
         if (data.success) {
           setCategories(data.categories);
         }
@@ -37,7 +35,7 @@ const ProductList = () => {
       }
     };
     fetchCategories();
-  }, [backendUrl]);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {

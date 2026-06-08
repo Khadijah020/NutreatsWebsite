@@ -23,19 +23,39 @@ await connectDB()
 await connectCloudinary()
 
 //Allow multiple origins
-const allowedOrigins = ['http://localhost:5173']
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost and 192.168.x.x networks
+    if (origin.startsWith('http://localhost') || origin.startsWith('http://192.168.')) {
+      return callback(null, true);
+    }
+
+    // Allow ngrok domains
+    if (origin.includes('.ngrok-free.app') || origin.includes('.ngrok.io')) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  // ✅ Add this
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']  // ✅ Add this
+};
 
 //for debugging purpose only
-// app.use((req, res, next) => {
-//   console.log(`➡️  ${req.method} ${req.url}`);
-//   next();
-// });
+app.use((req, res, next) => {
+  console.log(`➡️  ${req.method} ${req.url} from ${req.headers.origin || 'no origin'}`);
+  next();
+});
 
 
 //Middleware configuration
 app.use(express.json());
 app.use(cookieParser())
-app.use(cors({origin: allowedOrigins, credentials: true}))
+app.use(cors(corsOptions))
 
 app.get('/', (req, res)=> res.send("API is working!"))
 app.use('/api/user', userRouter)

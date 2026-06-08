@@ -118,7 +118,7 @@ export const getDispatchReminders = async (req, res) => {
 // Get Dashboard Analytics: /api/seller/dashboard
 export const getDashboardAnalytics = async (req, res) => {
   try {
-    const { timeRange = 'weekly' } = req.query;
+    const { timeRange = '7days' } = req.query;
 
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
@@ -145,12 +145,14 @@ export const getDashboardAnalytics = async (req, res) => {
       }
     });
 
-    // Calculate date range for sales data
+    // Calculate date range based on timeRange parameter
+    let filterStartDate = new Date();
     let periods = [];
     let previousPeriodStart = new Date();
 
     switch (timeRange) {
-      case 'weekly':
+      case '7days':
+        filterStartDate.setDate(filterStartDate.getDate() - 7);
         // Last 7 days
         for (let i = 6; i >= 0; i--) {
           const date = new Date();
@@ -163,7 +165,40 @@ export const getDashboardAnalytics = async (req, res) => {
         }
         previousPeriodStart.setDate(previousPeriodStart.getDate() - 14);
         break;
-      case 'yearly':
+      case '30days':
+        filterStartDate.setDate(filterStartDate.getDate() - 30);
+        // Last 30 days (grouped by week)
+        for (let i = 3; i >= 0; i--) {
+          const weekEnd = new Date();
+          weekEnd.setDate(weekEnd.getDate() - (i * 7));
+          const weekStart = new Date(weekEnd);
+          weekStart.setDate(weekEnd.getDate() - 6);
+          periods.push({
+            label: `Week ${4 - i}`,
+            start: new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 0, 0, 0, 0),
+            end: new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59, 999),
+          });
+        }
+        previousPeriodStart.setDate(previousPeriodStart.getDate() - 60);
+        break;
+      case '6months':
+        filterStartDate.setMonth(filterStartDate.getMonth() - 6);
+        // Last 6 months
+        for (let i = 5; i >= 0; i--) {
+          const monthDate = new Date();
+          monthDate.setMonth(monthDate.getMonth() - i);
+          const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+          const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0, 23, 59, 59);
+          periods.push({
+            label: monthStart.toLocaleDateString('en', { month: 'short' }),
+            start: monthStart,
+            end: monthEnd,
+          });
+        }
+        previousPeriodStart.setMonth(previousPeriodStart.getMonth() - 12);
+        break;
+      case '1year':
+        filterStartDate.setFullYear(filterStartDate.getFullYear() - 1);
         // Last 12 months
         for (let i = 11; i >= 0; i--) {
           const monthDate = new Date();
@@ -178,26 +213,30 @@ export const getDashboardAnalytics = async (req, res) => {
         }
         previousPeriodStart.setMonth(previousPeriodStart.getMonth() - 24);
         break;
-      default: // monthly
-        // Last 30 days (grouped by week)
-        for (let i = 3; i >= 0; i--) {
-          const weekEnd = new Date();
-          weekEnd.setDate(weekEnd.getDate() - (i * 7));
-          const weekStart = new Date(weekEnd);
-          weekStart.setDate(weekEnd.getDate() - 6);
+      default:
+        // Default to last 7 days
+        filterStartDate.setDate(filterStartDate.getDate() - 7);
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
           periods.push({
-            label: `Week ${4 - i}`,
-            start: new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 0, 0, 0, 0),
-            end: new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59, 999),
+            label: date.toLocaleDateString('en', { weekday: 'short' }),
+            start: new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0),
+            end: new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999),
           });
         }
-        previousPeriodStart.setDate(previousPeriodStart.getDate() - 60);
+        previousPeriodStart.setDate(previousPeriodStart.getDate() - 14);
     }
 
     // Get all orders
     const allOrders = await Order.find().populate('items.product');
 
-    // === 1. TODAY'S KPIs ===
+    // Filter orders based on selected time range
+    const filteredOrders = allOrders.filter(
+      o => new Date(o.createdAt) >= filterStartDate
+    );
+
+    // === 1. TODAY'S KPIs (These remain for "today" only) ===
     const todayOrders = allOrders.filter(
       o => new Date(o.createdAt) >= todayStart && new Date(o.createdAt) <= todayEnd
     );
@@ -208,30 +247,22 @@ export const getDashboardAnalytics = async (req, res) => {
 
     const todayOrdersCount = todayOrders.length;
 
-    const pendingShipments = allOrders.filter(o => 
-      ['Confirmed', 'Packed'].includes(o.status)
-    ).length;
-
-    const returnsCancellations = allOrders.filter(o => 
-      ['Cancelled', 'Returned'].includes(o.status)
-    ).length;
-
-    // === 2. ORDER STATUS COUNTS ===
-    const newOrders = allOrders.filter(o => o.status === 'Order Placed').length;
+    // === 2. ORDER STATUS COUNTS (Now based on selected time range) ===
+    const newOrders = filteredOrders.filter(o => o.status === 'Order Placed').length;
     
-    const packedProcessing = allOrders.filter(o => 
+    const packedProcessing = filteredOrders.filter(o => 
       ['Packed'].includes(o.status)
     ).length;
 
-    const unpaidOrders = allOrders.filter(o => 
+    const unpaidOrders = filteredOrders.filter(o => 
       o.status === 'Delivered' && o.isPaid === false
     ).length;
 
-    const canceledReturned = allOrders.filter(o => 
+    const canceledReturned = filteredOrders.filter(o => 
       ['Cancelled', 'Returned'].includes(o.status)
     ).length;
 
-    // === 3. FINANCIAL SUMMARY ===
+    // === 3. FINANCIAL SUMMARY (Uses ALL orders, not filtered) ===
     // Receivable: Orders in progress (not delivered yet) that are unpaid
     const receivable = allOrders
       .filter(o => 
@@ -269,10 +300,9 @@ export const getDashboardAnalytics = async (req, res) => {
     });
 
     // Calculate growth rate
-    const currentPeriodRevenue = allOrders
+    const currentPeriodRevenue = filteredOrders
       .filter(o => 
-        (o.status === 'Delivered' || o.status === 'Paid') &&
-        new Date(o.createdAt) >= periods[0].start
+        (o.status === 'Delivered' || o.status === 'Paid')
       )
       .reduce((sum, order) => sum + order.amount, 0);
 
@@ -280,7 +310,7 @@ export const getDashboardAnalytics = async (req, res) => {
       o => 
         (o.status === 'Delivered' || o.status === 'Paid') &&
         new Date(o.createdAt) >= previousPeriodStart && 
-        new Date(o.createdAt) < periods[0].start
+        new Date(o.createdAt) < filterStartDate
     );
     const previousPeriodRevenue = previousPeriodOrders.reduce((sum, order) => sum + order.amount, 0);
 
@@ -291,19 +321,17 @@ export const getDashboardAnalytics = async (req, res) => {
     res.json({
       success: true,
       analytics: {
-        // KPIs
+        // KPIs (Today only)
         todaySales,
         todayOrders: todayOrdersCount,
-        pendingShipments,
-        returnsCancellations,
         
-        // Order Status
+        // Order Status (Based on selected time range)
         newOrders,
         packedProcessing,
         unpaidOrders,
         canceledReturned,
         
-        // Financial
+        // Financial (Based on selected time range)
         receivable,
         payable,
         netPayout,
@@ -312,7 +340,7 @@ export const getDashboardAnalytics = async (req, res) => {
         salesData,
         growthRate: parseFloat(growthRate),
 
-        // Dispatch Reminders - FIXED: Using correct property names
+        // Dispatch Reminders
         urgentCount: urgentDispatch,
         warningCount: warningDispatch,
         totalPackedOrders: packedOrders.length,

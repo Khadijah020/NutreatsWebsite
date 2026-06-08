@@ -4,6 +4,7 @@ import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { PlusCircle, X, Upload, Sparkles, CheckCircle } from "lucide-react";
 import RichTextEditor from "../../components/seller/RichTextEditor.jsx";
+import { fetchAPI } from '../../utils/api';
 
 const AddProduct = () => {
   const [files, setFiles] = useState([]);
@@ -42,8 +43,6 @@ const AddProduct = () => {
   // Tab state
   const [activeTab, setActiveTab] = useState("basic");
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
-
   const tabs = [
     { id: "basic", label: "Basic Info" },
     { id: "seo", label: "SEO & Schema" },
@@ -67,8 +66,7 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${backendUrl}/api/category/list`);
-        const data = await response.json();
+        const data = await fetchAPI('/api/category/list');
         if (data.success) {
           const activeCategories = data.categories.filter(cat => cat.isActive);
           setCategories(activeCategories);
@@ -82,7 +80,7 @@ const AddProduct = () => {
     };
 
     fetchCategories();
-  }, [backendUrl]);
+  }, []);
 
   const addWeightVariant = () => {
     if (!currentWeight.weight || !currentWeight.price || !currentWeight.offerPrice) {

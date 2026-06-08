@@ -6,6 +6,7 @@ import { ChevronRight, ShoppingCart, Truck, Shield, ZoomIn, CheckCircle2, Chevro
 import SEO from "../components/SEO";
 import { ArrowLeft } from "lucide-react";
 import { trackProductView, trackAddToCart, trackRemoveFromCart } from "../utils/analytics";
+import { fetchAPI } from '../utils/api';
 
 // ✅ Fisher-Yates shuffle algorithm for randomizing array
 const shuffleArray = (array) => {
@@ -38,7 +39,6 @@ const ProductDetails = () => {
   
   
   const { slug } = useParams();
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
   // Add product to recently viewed
   const addToRecentlyViewed = (productData) => {
@@ -105,8 +105,7 @@ const ProductDetails = () => {
 
   const fetchCategoryData = async (categoryName) => {
     try {
-      const response = await fetch(`${backendUrl}/api/category/list`);
-      const data = await response.json();
+      const data = await fetchAPI('/api/category/list');
       if (data.success) {
         const foundCategory = data.categories.find(
           (cat) => cat.name.toLowerCase() === categoryName.toLowerCase()

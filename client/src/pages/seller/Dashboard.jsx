@@ -16,12 +16,13 @@ import {
   Bell,
   X,
   Sparkles,
+  ChevronDown,
 } from 'lucide-react';
 
 const Dashboard = () => {
   const { axios, navigate } = useAppContext();
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('weekly');
+  const [filterPeriod, setFilterPeriod] = useState('7days'); // For filterable cards
   const [analytics, setAnalytics] = useState({
     todaySales: 0,
     todayOrders: 0,
@@ -52,7 +53,7 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const { data } = await axios.get(`/api/seller/dashboard?timeRange=${timeRange}`);
+      const { data } = await axios.get(`/api/seller/dashboard?timeRange=${filterPeriod}`);
       if (data.success) {
         setAnalytics(data.analytics);
       } else {
@@ -77,8 +78,18 @@ const Dashboard = () => {
           urgentCount: data.urgentCount || 0,
           warningCount: data.warningCount || 0,
         });
-        if (data.urgentCount > 0) {
-          setShowReminders(true);
+        
+        // Check if we should show the reminder modal
+        if (data.urgentCount > 0 || data.warningCount > 0) {
+          const lastShown = localStorage.getItem('dispatchReminderLastShown');
+          const now = new Date().getTime();
+          const twelveHoursInMs = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+          
+          // Show if never shown before OR 12 hours have passed
+          if (!lastShown || (now - parseInt(lastShown)) >= twelveHoursInMs) {
+            setShowReminders(true);
+            localStorage.setItem('dispatchReminderLastShown', now.toString());
+          }
         }
       }
     } catch (error) {
@@ -93,7 +104,7 @@ const Dashboard = () => {
       fetchDispatchReminders();
     }, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [timeRange]);
+  }, [filterPeriod]);
 
   const kpiCards = [
     {
@@ -114,24 +125,13 @@ const Dashboard = () => {
       description: 'New orders received',
       delay: '100ms',
     },
-    {
-      title: 'Pending Shipments',
-      value: analytics.pendingShipments || 0,
-      icon: Truck,
-      gradient: 'from-amber-400 via-orange-500 to-red-500',
-      shadow: 'shadow-amber-500/20',
-      description: 'Orders awaiting dispatch',
-      delay: '200ms',
-    },
-    {
-      title: 'Returns / Cancellations',
-      value: analytics.returnsCancellations || 0,
-      icon: XCircle,
-      gradient: 'from-rose-400 via-pink-500 to-fuchsia-500',
-      shadow: 'shadow-rose-500/20',
-      description: 'Issues needing attention',
-      delay: '300ms',
-    },
+  ];
+
+  const periodOptions = [
+    { value: '7days', label: 'Last 7 Days' },
+    { value: '30days', label: 'Last 30 Days' },
+    { value: '6months', label: 'Last 6 Months' },
+    { value: '1year', label: 'Last 1 Year' },
   ];
 
   const orderStatusCards = [
@@ -140,28 +140,28 @@ const Dashboard = () => {
       count: analytics.newOrders || 0,
       icon: AlertCircle,
       gradient: 'from-purple-500 to-indigo-600',
-      route: '/seller/orders?status=Order Placed',
+      route: `/seller/orders?status=Order Placed&timeRange=${filterPeriod}`,
     },
     {
       title: 'Packed',
       count: analytics.packedProcessing || 0,
       icon: Package,
       gradient: 'from-blue-500 to-cyan-600',
-      route: '/seller/orders?status=Packed',
+      route: `/seller/orders?status=Packed&timeRange=${filterPeriod}`,
     },
     {
       title: 'Unpaid Orders',
       count: analytics.unpaidOrders || 0,
       icon: Clock,
       gradient: 'from-orange-500 to-amber-600',
-      route: '/seller/orders?status=Delivered&paid=false',
+      route: `/seller/orders?status=Delivered&paid=false&timeRange=${filterPeriod}`,
     },
     {
       title: 'Canceled / Returned',
       count: analytics.canceledReturned || 0,
       icon: XCircle,
       gradient: 'from-red-500 to-rose-600',
-      route: '/seller/orders?status=Cancelled,Returned',
+      route: `/seller/orders?status=Cancelled,Returned&timeRange=${filterPeriod}`,
     },
   ];
 
@@ -388,38 +388,65 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* KPI Cards - 2x2 Grid on Mobile */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
-          {kpiCards.map((card, index) => {
-            const Icon = card.icon;
-            return (
-              <div
-                key={index}
-                className="glass-morphism rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 hover:shadow-2xl transition-all duration-500 group cursor-pointer animate-slide-in-up border-2 border-white/20 hover:scale-105"
-                style={{ animationDelay: card.delay }}
-              >
-                <div className={`bg-gradient-to-br ${card.gradient} p-2.5 sm:p-3 lg:p-4 rounded-2xl shadow-lg ${card.shadow} mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <Icon className="w-5 h-5 sm:w-6 sm:h-7 text-white" />
+        {/* Fixed KPI Cards - TODAY ONLY (2 Cards) */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900">Today's Performance</h2>
+            <span className="text-xs sm:text-sm text-gray-500 font-medium bg-white/60 px-3 py-1 rounded-full border border-gray-200">
+              Real-time
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
+            {kpiCards.map((card, index) => {
+              const Icon = card.icon;
+              return (
+                <div
+                  key={index}
+                  className="glass-morphism rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 shadow-xl transition-all duration-500 group animate-slide-in-up border-2 border-white/20"
+                  style={{ animationDelay: card.delay }}
+                >
+                  <div className={`bg-gradient-to-br ${card.gradient} p-2.5 sm:p-3 lg:p-4 rounded-2xl shadow-lg ${card.shadow} mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-7 text-white" />
+                  </div>
+                  <h3 className="text-[10px] sm:text-xs font-bold text-gray-600 mb-1 sm:mb-2 uppercase tracking-wider">
+                    {card.title}
+                  </h3>
+                  <p className="text-lg sm:text-2xl lg:text-3xl xl:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-1 sm:mb-2">
+                    {card.value}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">{card.description}</p>
                 </div>
-                <h3 className="text-[10px] sm:text-xs font-bold text-gray-600 mb-1 sm:mb-2 uppercase tracking-wider">
-                  {card.title}
-                </h3>
-                <p className="text-lg sm:text-2xl lg:text-3xl xl:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-1 sm:mb-2">
-                  {card.value}
-                </p>
-                <p className="text-[10px] sm:text-xs text-gray-500">{card.description}</p>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        {/* Order Status */}
+        {/* Order Status with Time Range Filter */}
         <div className="glass-morphism rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-6 md:p-8 animate-slide-in-up border-2 border-white/20" style={{ animationDelay: '400ms' }}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2.5 sm:p-3 rounded-xl">
-              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2.5 sm:p-3 rounded-xl">
+                <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Order Status</h2>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Order Status</h2>
+            
+            {/* Dropdown Filter */}
+            <div className="relative min-w-[140px] sm:min-w-[160px]">
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 pointer-events-none z-10" />
+              <select
+                value={filterPeriod}
+                onChange={(e) => setFilterPeriod(e.target.value)}
+                className="appearance-none w-full bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-500 rounded-xl pl-8 sm:pl-9 pr-8 sm:pr-9 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-emerald-900 hover:border-emerald-600 hover:shadow-lg hover:shadow-emerald-200/50 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {periodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 pointer-events-none" />
+            </div>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {orderStatusCards.map((card, index) => {
@@ -493,24 +520,8 @@ const Dashboard = () => {
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Sales Overview</h2>
-                <p className="text-xs sm:text-sm text-gray-600">Track your performance</p>
+                <p className="text-xs sm:text-sm text-gray-600">Performance for selected period</p>
               </div>
-            </div>
-
-            <div className="flex gap-2 bg-white/50 backdrop-blur-sm p-1.5 rounded-2xl border border-gray-200">
-              {['weekly', 'monthly', 'yearly'].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 ${
-                    timeRange === range
-                      ? 'bg-gradient-to-r from-[#EB8A14] via-[#f59e0b] to-[#fb923c] text-white shadow-lg scale-105'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  {range.charAt(0).toUpperCase() + range.slice(1)}
-                </button>
-              ))}
             </div>
           </div>
 
@@ -532,7 +543,7 @@ const Dashboard = () => {
             <span className="text-xs sm:text-sm text-gray-500 font-medium">vs previous period</span>
           </div>
 
-          <SalesChart data={analytics.salesData} timeRange={timeRange} />
+          <SalesChart data={analytics.salesData} filterPeriod={filterPeriod} />
         </div>
       </div>
     </div>
