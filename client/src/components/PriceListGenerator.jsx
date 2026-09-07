@@ -1,14 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { Download, FileText, Image, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, FileText, X } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
 
 const PriceListGenerator = ({ products, categories, currency }) => {
   const [showModal, setShowModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [debugLog, setDebugLog] = useState([]);
-  const priceListRef = useRef(null);
 
   // Organize products by category with category-specific weights ONLY
   const organizeProductsByCategory = () => {
@@ -142,124 +139,6 @@ const PriceListGenerator = ({ products, categories, currency }) => {
     }
   };
 
-  const downloadAsImage = async () => {
-    setIsGenerating(true);
-    const logs = [];
-    
-    try {
-      logs.push('Starting image generation...');
-      
-      if (!priceListRef.current) {
-        throw new Error('Price list reference not found');
-      }
-      
-      logs.push('Found price list element');
-      
-      // CRITICAL: Store computed styles BEFORE cloning
-      const originalElement = priceListRef.current;
-      const allOriginalElements = [originalElement, ...originalElement.querySelectorAll('*')];
-      
-      logs.push(`Capturing styles from ${allOriginalElements.length} original elements...`);
-      
-      const styleMap = new Map();
-      allOriginalElements.forEach((el, index) => {
-        const computed = window.getComputedStyle(el);
-        const colorProps = [
-          'color', 'backgroundColor', 'borderColor',
-          'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
-          'outlineColor', 'textDecorationColor', 'columnRuleColor'
-        ];
-        
-        const styles = {};
-        colorProps.forEach(prop => {
-          const value = computed[prop];
-          if (value && value !== 'rgba(0, 0, 0, 0)' && value !== 'transparent') {
-            styles[prop] = value;
-          }
-        });
-        
-        // Store using a unique identifier
-        if (!el.dataset.imgId) {
-          el.dataset.imgId = `img-${index}`;
-        }
-        styleMap.set(el.dataset.imgId, styles);
-      });
-      
-      logs.push('Styles captured, starting html2canvas...');
-      
-      const canvas = await html2canvas(priceListRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        onclone: (clonedDoc, clonedElement) => {
-          logs.push('In onclone callback...');
-          
-          // Find the cloned content
-          const content = clonedDoc.getElementById('price-list-content');
-          if (!content) {
-            logs.push('ERROR: Could not find cloned content element!');
-            return;
-          }
-          
-          logs.push('Found cloned content, applying stored styles...');
-          
-          // Get all elements in clone
-          const allClonedElements = [content, ...content.querySelectorAll('*')];
-          
-          let applied = 0;
-          allClonedElements.forEach((clonedEl) => {
-            const imgId = clonedEl.dataset.imgId;
-            if (imgId && styleMap.has(imgId)) {
-              const styles = styleMap.get(imgId);
-              Object.entries(styles).forEach(([prop, value]) => {
-                clonedEl.style[prop] = value;
-                applied++;
-              });
-              
-              // Also remove all classes to be extra safe
-              clonedEl.removeAttribute('class');
-            }
-          });
-          
-          logs.push(`Applied ${applied} style properties to cloned elements`);
-          
-          // Force background color
-          content.style.backgroundColor = '#ffffff';
-          
-          logs.push('Style application complete');
-        }
-      });
-      
-      logs.push('Canvas generated successfully');
-      logs.push(`Canvas size: ${canvas.width}x${canvas.height}`);
-      
-      // Clean up dataset attributes
-      allOriginalElements.forEach(el => {
-        delete el.dataset.imgId;
-      });
-      
-      const link = document.createElement('a');
-      link.download = 'price-list.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      
-      logs.push('Image download triggered');
-      setDebugLog(logs);
-      
-    } catch (error) {
-      logs.push(`ERROR: ${error.message}`);
-      logs.push(`Stack: ${error.stack}`);
-      setDebugLog(logs);
-      console.error('Error generating image:', error);
-      console.log('Debug log:', logs);
-      alert('Failed to generate image. Check console for debug log. Error: ' + error.message);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   return (
     <>
       <button
@@ -331,8 +210,7 @@ const PriceListGenerator = ({ products, categories, currency }) => {
               padding: '24px',
               backgroundColor: '#f9f9f9'
             }}>
-              <div 
-                ref={priceListRef} 
+              <div
                 id="price-list-content"
                 style={{ 
                   backgroundColor: '#ffffff',
@@ -529,82 +407,8 @@ const PriceListGenerator = ({ products, categories, currency }) => {
                 )}
                 Download PDF
               </button>
-              
-              <button
-                onClick={downloadAsImage}
-                disabled={isGenerating}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  backgroundColor: isGenerating ? '#d1d5db' : '#16a34a',
-                  color: '#ffffff',
-                  borderRadius: '8px',
-                  border: 'none',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  cursor: isGenerating ? 'not-allowed' : 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isGenerating) e.currentTarget.style.backgroundColor = '#15803d';
-                }}
-                onMouseLeave={(e) => {
-                  if (!isGenerating) e.currentTarget.style.backgroundColor = '#16a34a';
-                }}
-              >
-                {isGenerating ? (
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    border: '2px solid #ffffff',
-                    borderTopColor: 'transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }} />
-                ) : (
-                  <Image size={18} />
-                )}
-                Download Image
-              </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {debugLog.length > 0 && (
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          backgroundColor: '#1f2937',
-          color: '#ffffff',
-          padding: '16px',
-          borderRadius: '8px',
-          maxWidth: '400px',
-          maxHeight: '300px',
-          overflow: 'auto',
-          fontSize: '12px',
-          zIndex: 9999,
-          fontFamily: 'monospace'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <strong>Debug Log:</strong>
-            <button 
-              onClick={() => setDebugLog([])}
-              style={{
-                backgroundColor: 'transparent',
-                color: '#ffffff',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '0 4px'
-              }}
-            >✕</button>
-          </div>
-          {debugLog.map((log, i) => (
-            <div key={i} style={{ marginBottom: '4px' }}>{log}</div>
-          ))}
         </div>
       )}
 

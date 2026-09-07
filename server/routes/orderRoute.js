@@ -2,7 +2,7 @@ import express from 'express';
 import authUser from '../middlewares/authUser.js';
 import authSeller from '../middlewares/authSeller.js';
 import { 
-  getAllOrders, 
+  //getAllOrders, 
   getUserOrders, 
   placeOrderCOD,
   getOrderById,
@@ -21,7 +21,7 @@ orderRouter.post('/cod', placeOrderCOD);
 orderRouter.get('/user', authUser, getUserOrders);
 
 // Seller routes
-orderRouter.get('/seller', authSeller, getAllOrders);
+//orderRouter.get('/seller', authSeller, getAllOrders);
 orderRouter.post('/id', authSeller, getOrderById);
 orderRouter.get('/reports', authSeller, getSellerReports);
 orderRouter.get('/sellerOrders', authSeller, getSellerOrders);

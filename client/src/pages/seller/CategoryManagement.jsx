@@ -23,7 +23,7 @@ export default function CategoryManagement() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${backendUrl}api/category/list`);
+      const response = await fetch(`${backendUrl}/api/category/list`);
       const data = await response.json();
       if (data.success) {
         setCategories(data.categories);
@@ -108,7 +108,7 @@ export default function CategoryManagement() {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
     try {
-      const response = await fetch(`${backendUrl}api/category/delete/${id}`, {
+      const response = await fetch(`${backendUrl}/api/category/delete/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });

@@ -223,78 +223,6 @@ export const productById = async (req , res)=>{
     }
 }
 
-// //Update Product: /api/product/update
-// //Update Product: /api/product/update
-// export const updateProduct = async (req, res) => {
-//     try {
-//         const { id, name, description, price, offerPrice, image, category, inStock, weights } = req.body;
-
-//         // Validate required fields
-//         if (!id) {
-//             return res.json({ success: false, message: 'Product ID is required' });
-//         }
-
-//         if (!name || !category) {
-//             return res.json({ success: false, message: 'Name and category are required' });
-//         }
-
-//         // Check if either base prices or weight variants exist
-//         const hasBasePrice = price && offerPrice && price !== '0' && offerPrice !== '0';
-//         const hasWeights = weights && Array.isArray(weights) && weights.length > 0;
-
-//         if (!hasBasePrice && !hasWeights) {
-//             return res.json({ success: false, message: 'Either base prices or weight variants are required' });
-//         }
-
-//         // Validate description only if provided
-//         if (description !== undefined && (!Array.isArray(description))) {
-//             return res.json({ success: false, message: 'Description must be an array' });
-//         }
-
-//         if (!Array.isArray(image) || image.length === 0) {
-//             return res.json({ success: false, message: 'At least one image is required' });
-//         }
-
-//         // Prepare update object
-//         const updateData = {
-//             name,
-//             price: Number(price) || 0,
-//             offerPrice: Number(offerPrice) || 0,
-//             image,
-//             category,
-//             inStock: inStock !== undefined ? inStock : true,
-//             weights: weights || []
-//         };
-
-//         // Only include description if it exists and has content
-//         if (description && Array.isArray(description) && description.length > 0) {
-//             updateData.description = description;
-//         } else {
-//             updateData.description = [];
-//         }
-
-//         // Update the product
-//         const updated = await Product.findByIdAndUpdate(
-//             id,
-//             updateData,
-//             { new: true, runValidators: true }
-//         );
-
-//         if (!updated) {
-//             return res.json({ success: false, message: 'Product not found' });
-//         }
-
-//         res.json({ 
-//             success: true, 
-//             message: 'Product updated successfully', 
-//             product: updated 
-//         });
-
-//     } catch (error) {
-//         console.log(error.message);
-//         res.json({ success: false, message: error.message });
-//     }
-// }
 
 //Remove Product: /api/product/remove
 export const removeProduct = async (req, res) => {
@@ -311,15 +239,7 @@ export const removeProduct = async (req, res) => {
             return res.json({ success: false, message: 'Product not found' });
         }
 
-        // Optional: Delete images from Cloudinary
-        // if (product.image && product.image.length > 0) {
-        //     await Promise.all(
-        //         product.image.map(async (imageUrl) => {
-        //             const publicId = imageUrl.split('/').pop().split('.')[0];
-        //             await cloudinary.uploader.destroy(`products/${publicId}`);
-        //         })
-        //     );
-        // }
+        
 
         res.json({ 
             success: true, 

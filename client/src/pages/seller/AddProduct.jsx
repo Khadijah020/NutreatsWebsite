@@ -30,7 +30,7 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${backendUrl}api/category/list`);
+        const response = await fetch(`${backendUrl}/api/category/list`);
         const data = await response.json();
         if (data.success) {
           const activeCategories = data.categories.filter(cat => cat.isActive);

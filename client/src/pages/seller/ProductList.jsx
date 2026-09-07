@@ -27,7 +27,7 @@ const ProductList = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${backendUrl}api/category/list`);
+        const response = await fetch(`${backendUrl}/api/category/list`);
         const data = await response.json();
         if (data.success) {
           setCategories(data.categories);

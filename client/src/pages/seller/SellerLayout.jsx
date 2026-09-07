@@ -4,7 +4,7 @@ import logo from "../../assets/logo.png";
 import { Outlet, NavLink, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useState } from "react";
-import { Menu, Users, Package, ShoppingCart, FileText, PlusCircle, Grid, LayoutDashboard } from "lucide-react";
+import { Menu, Users, Package, ShoppingCart, FileText, PlusCircle, Grid, LayoutDashboard, BarChart3 } from "lucide-react";
 
 const SellerLayout = () => {
   const { axios, navigate } = useAppContext();
@@ -18,6 +18,7 @@ const SellerLayout = () => {
     { name: "Product List", path: "/seller/product-list", icon: Package },
     { name: "Orders", path: "/seller/orders", icon: ShoppingCart },
     { name: "Create Bill", path: "/seller/create-bill", icon: FileText },
+    { name: "Reports", path: "/seller/reports", icon: BarChart3 },
   ];
 
   const logout = async () => {
@@ -63,7 +64,7 @@ const SellerLayout = () => {
       </div>
 
       {/* Sidebar + Main */}
-      <div className="flex bg-[#bfd9bde0] min-h-[calc(100vh-70px)]">
+      <div className="flex bg-[#bfd9bde0] min-h-[calc(100vh-70px)] overflow-x-hidden">
         {/* Sidebar for large screens */}
         <div className="hidden sm:flex md:w-64 w-64 border-r border-gray-300 bg-[#bfd9bde0] flex-col pt-4 shadow-sm">
           {sidebarLinks.map((item) => {
@@ -129,7 +130,7 @@ const SellerLayout = () => {
         )}
 
         {/* Main Content */}
-        <div className="flex-1 p-6 sm:p-6 lg:p-8">
+        <div className="flex-1 min-w-0 p-6 sm:p-6 lg:p-8">
           <Outlet />
         </div>
       </div>

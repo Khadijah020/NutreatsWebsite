@@ -101,7 +101,7 @@ const ProductDetails = () => {
 
   const fetchCategoryData = async (categoryName) => {
     try {
-      const response = await fetch(`${backendUrl}api/category/list`);
+      const response = await fetch(`${backendUrl}/api/category/list`);
       const data = await response.json();
       if (data.success) {
         const foundCategory = data.categories.find(

@@ -5,7 +5,7 @@ const SEO = ({
   description = 'Shop the finest selection of healthy, nutritious treats and snacks. Organic, gluten-free, and delicious options for a better lifestyle.',
   keywords = 'healthy snacks, organic treats, nutritious food, gluten-free snacks, wellness products',
   image = 'http://localhost:5173/logo.png',
-  url = 'http://localhost:5173/',
+  url = 'http://localhost:5173',
   type = 'website',
   author = 'NuTreats',
   canonicalUrl,

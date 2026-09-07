@@ -89,7 +89,7 @@ export const getDispatchReminders = async (req, res) => {
         packedAt: packedDate,
         hoursWaiting: Math.floor(hoursWaiting),
         itemCount: order.items.length,
-        paymentMethod: order.paymentMethod,
+        paymentMethod: order.paymentType,
       };
 
       if (hoursWaiting >= 24) {

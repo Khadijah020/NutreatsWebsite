@@ -525,9 +525,9 @@ const OrderDetails = () => {
                     return (
                       <div
                         key={index}
-                        className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-md hover:shadow-lg transition-all border-2 border-transparent hover:border-[#EB8A14]/30"
+                        className="flex items-start sm:items-center gap-3 sm:gap-4 p-4 rounded-2xl bg-white shadow-md hover:shadow-lg transition-all border-2 border-transparent hover:border-[#EB8A14]/30"
                       >
-                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shrink-0 shadow-md border-2 border-[#EB8A14]/20">
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shrink-0 shadow-md border-2 border-[#EB8A14]/20">
                           <img
                             src={item.image || item.product?.image?.[0] || "/placeholder.png"}
                             alt={item.name || item.product?.name || "Product"}
@@ -536,7 +536,7 @@ const OrderDetails = () => {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-gray-800 mb-2 truncate text-lg">
+                          <h4 className="font-bold text-gray-800 mb-2 text-base sm:text-lg break-words">
                             {item.name || item.product?.name}
                           </h4>
 
@@ -552,8 +552,8 @@ const OrderDetails = () => {
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <p className="text-xl font-bold bg-gradient-to-r from-[#EB8A14] to-[#d97706] bg-clip-text text-transparent">
+                        <div className="text-right shrink-0">
+                          <p className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#EB8A14] to-[#d97706] bg-clip-text text-transparent">
                             Rs. {itemTotal.toFixed(2)}
                           </p>
                           <p className="text-xs text-gray-500 font-medium">

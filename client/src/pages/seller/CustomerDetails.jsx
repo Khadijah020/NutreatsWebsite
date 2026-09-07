@@ -88,11 +88,11 @@ const CustomerDetails = () => {
     <div className="min-h-screen bg-[#bfd9bde0] py-8 px-4">
       <div className="w-full max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.history.back()}
-              className="p-2 hover:bg-[#bfd9bde0] rounded-xl transition border-2 border-[#EB8A14]"
+              className="p-2 hover:bg-[#bfd9bde0] rounded-xl transition border-2 border-[#EB8A14] shrink-0"
             >
               <ArrowLeft size={20} className="text-[#EB8A14]" />
             </button>
@@ -107,26 +107,26 @@ const CustomerDetails = () => {
           {!isEditing ? (
             <button
               onClick={() => setIsEditing(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-[#EB8A14] text-white rounded-xl hover:bg-orange-600 transition shadow-md border-2 border-[#EB8A14]"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-[#EB8A14] text-white rounded-xl hover:bg-orange-600 transition shadow-md border-2 border-[#EB8A14] w-full sm:w-auto"
             >
               <Edit2 size={16} />
               <span>Edit Details</span>
             </button>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => {
                   setIsEditing(false);
                   setEditForm(customer);
                 }}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-xl hover:bg-gray-100 transition border-2 border-[#EB8A14]"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-xl hover:bg-gray-100 transition border-2 border-[#EB8A14]"
               >
                 <X size={16} />
                 <span>Cancel</span>
               </button>
               <button
                 onClick={handleUpdateCustomer}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-[#EB8A14] text-white rounded-xl hover:bg-orange-600 transition shadow-md border-2 border-[#EB8A14]"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#EB8A14] text-white rounded-xl hover:bg-orange-600 transition shadow-md border-2 border-[#EB8A14]"
               >
                 <Save size={16} />
                 <span>Save</span>

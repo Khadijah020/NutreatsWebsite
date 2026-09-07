@@ -466,20 +466,20 @@ export const getUserOrders = async (req, res) => {
 };
 
 // Get All Orders (for seller/admin): /api/order/sellerOrders
-export const getAllOrders = async (req, res) => {
-  try {
-    const orders = await Order.find({
-      $or: [{ paymentType: "COD" }, { isPaid: true }]
-    })
-      .populate("items.product address")
-      .sort({ createdAt: -1 });
+// export const getAllOrders = async (req, res) => {
+//   try {
+//     const orders = await Order.find({
+//       $or: [{ paymentType: "COD" }, { isPaid: true }]
+//     })
+//       .populate("items.product address")
+//       .sort({ createdAt: -1 });
 
-    res.json({ success: true, orders });
-  } catch (error) {
-    console.log(error.message);
-    res.json({ success: false, message: error.message });
-  }
-};
+//     res.json({ success: true, orders });
+//   } catch (error) {
+//     console.log(error.message);
+//     res.json({ success: false, message: error.message });
+//   }
+// };
 
 // Update Order Status: /api/order/update-status
 // Update Order Status (now includes payment): /api/order/update-status
@@ -503,7 +503,8 @@ export const updateOrderStatus = async (req, res) => {
       'Dispatched',
       'Delivered',
       'Cancelled',
-      'Returned'
+      'Returned',
+      'Completed'  // ✅ New completed status
     ];
 
     if (!validStatuses.includes(status)) {

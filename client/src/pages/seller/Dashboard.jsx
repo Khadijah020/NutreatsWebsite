@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import toast from 'react-hot-toast';
 import {
@@ -17,6 +17,29 @@ import {
   Bell,
   X,
 } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Register once at module scope. Chart.js 4 is tree-shakeable, so forgetting
+// this is a common cause of a silent crash the first time the chart mounts.
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const Dashboard = () => {
   const { axios, navigate } = useAppContext();
@@ -51,12 +74,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const { data } = await axios.get(`/api/seller/dashboard?timeRange=${timeRange}`);
-      console.log('📊 Dashboard Data:', data);
-      
       if (data.success) {
-        console.log('✅ Analytics:', data.analytics);
-        console.log('🔔 Urgent Count:', data.analytics.urgentCount);
-        console.log('⚠️ Warning Count:', data.analytics.warningCount);
         setAnalytics(data.analytics);
       } else {
         toast.error(data.message);
@@ -72,16 +90,7 @@ const Dashboard = () => {
   const fetchDispatchReminders = async () => {
     try {
       const { data } = await axios.get('/api/seller/dispatch-reminders');
-      console.log('🔔 Dispatch Reminders Raw Response:', data);
-      
       if (data.success) {
-        console.log('📦 Reminders Object:', data.reminders);
-        console.log('🚨 Urgent Count from API:', data.urgentCount);
-        console.log('⚠️ Warning Count from API:', data.warningCount);
-        console.log('📋 Urgent Orders:', data.reminders.urgent);
-        console.log('📋 Warning Orders:', data.reminders.warning);
-        
-        // FIXED: Set the reminders with counts from the root data object
         setDispatchReminders({
           urgent: data.reminders.urgent || [],
           warning: data.reminders.warning || [],
@@ -89,17 +98,7 @@ const Dashboard = () => {
           urgentCount: data.urgentCount || 0,
           warningCount: data.warningCount || 0,
         });
-        
-        console.log('✅ State will be set to:', {
-          urgentCount: data.urgentCount,
-          warningCount: data.warningCount,
-          urgentLength: data.reminders.urgent?.length,
-          warningLength: data.reminders.warning?.length,
-        });
-        
-        // Auto-show modal if there are urgent reminders
         if (data.urgentCount > 0) {
-          console.log('🚨 AUTO-SHOWING MODAL - Urgent count:', data.urgentCount);
           setShowReminders(true);
         }
       }
@@ -109,23 +108,15 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    console.log('🔄 Effect running - timeRange:', timeRange);
     fetchDashboardData();
     fetchDispatchReminders();
-    
-    // Refresh reminders every 5 minutes
+
     const interval = setInterval(() => {
-      console.log('⏰ Auto-refresh reminders (5 min interval)');
       fetchDispatchReminders();
     }, 5 * 60 * 1000);
-    
+
     return () => clearInterval(interval);
   }, [timeRange]);
-
-  // Debug log whenever dispatchReminders state changes
-  useEffect(() => {
-    console.log('🔄 dispatchReminders State Updated:', dispatchReminders);
-  }, [dispatchReminders]);
 
   const kpiCards = [
     {
@@ -253,23 +244,14 @@ const Dashboard = () => {
     );
   }
 
-  console.log('🎨 Rendering Dashboard - dispatchReminders:', dispatchReminders);
-  console.log('🎨 Banner condition check:', {
-    urgentCount: dispatchReminders.urgentCount,
-    warningCount: dispatchReminders.warningCount,
-    showReminders,
-    shouldShowBanner: (dispatchReminders.urgentCount > 0 || dispatchReminders.warningCount > 0) && !showReminders
-  });
-
   return (
     <div className="min-h-screen py-3 px-3 sm:py-6 sm:px-4">
       <div className="w-full max-w-7xl mx-auto">
-        
+
         {/* Dispatch Reminders Modal */}
         {showReminders && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-              {/* Header */}
               <div className="bg-gradient-to-r from-red-500 to-orange-500 p-4 sm:p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -290,9 +272,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Content */}
               <div className="p-4 sm:p-6 overflow-y-auto max-h-[60vh]">
-                {/* Urgent Orders (>24 hours) */}
                 {dispatchReminders.urgent?.length > 0 && (
                   <div className="mb-6">
                     <div className="flex items-center gap-2 mb-3">
@@ -332,7 +312,6 @@ const Dashboard = () => {
                   </div>
                 )}
 
-                {/* Warning Orders (12-24 hours) */}
                 {dispatchReminders.warning?.length > 0 && (
                   <div className="mb-6">
                     <div className="flex items-center gap-2 mb-3">
@@ -372,7 +351,6 @@ const Dashboard = () => {
                   </div>
                 )}
 
-                {/* No reminders */}
                 {dispatchReminders.urgent?.length === 0 && dispatchReminders.warning?.length === 0 && (
                   <div className="text-center py-8">
                     <div className="inline-block p-4 bg-green-100 rounded-full mb-3">
@@ -383,7 +361,6 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* Footer */}
               <div className="border-t-2 border-gray-200 p-4 bg-gray-50">
                 <button
                   onClick={() => navigate('/seller/orders?status=Packed')}
@@ -400,13 +377,10 @@ const Dashboard = () => {
         {(dispatchReminders.urgentCount > 0 || dispatchReminders.warningCount > 0) && !showReminders && (
           <div className="mb-4">
             <div
-              onClick={() => {
-                console.log('🔔 Banner clicked - opening modal');
-                setShowReminders(true);
-              }}
+              onClick={() => setShowReminders(true)}
               className={`${
-                dispatchReminders.urgentCount > 0 
-                  ? 'bg-gradient-to-r from-red-500 to-orange-500' 
+                dispatchReminders.urgentCount > 0
+                  ? 'bg-gradient-to-r from-red-500 to-orange-500'
                   : 'bg-gradient-to-r from-orange-400 to-amber-500'
               } rounded-xl p-3 sm:p-4 cursor-pointer hover:shadow-lg transition-all`}
             >
@@ -439,9 +413,8 @@ const Dashboard = () => {
           <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's your business overview</p>
         </div>
 
-        {/* Rest of the dashboard remains the same... */}
         {/* 1. TOP KPI CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           {kpiCards.map((card, index) => {
             const Icon = card.icon;
             return (
@@ -520,7 +493,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Graph section - keeping original */}
+        {/* Graph section */}
         <div className="mb-8">
           <div className="bg-white rounded-3xl p-6 border-2 border-gray-200 shadow-md">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -569,7 +542,7 @@ const Dashboard = () => {
               <span className="text-sm text-gray-600">vs previous period</span>
             </div>
 
-            <SalesChart data={analytics.salesData} timeRange={timeRange} />
+            <SalesChart data={analytics.salesData} />
           </div>
         </div>
       </div>
@@ -577,160 +550,87 @@ const Dashboard = () => {
   );
 };
 
-// Custom Sales Chart Component (No Recharts)
-const SalesChart = ({ data, timeRange }) => {
+// Sales chart — Chart.js via react-chartjs-2, replacing the hand-rolled SVG.
+// The old version set the <svg> to width="100%" while its viewBox was sized
+// in real pixels (data.length * 60). Those two don't agree, so on a narrow
+// mobile screen the browser had to squash the whole viewBox down to fit —
+// points overlapped and labels became unreadable instead of the intended
+// "scroll sideways to see more points" behavior. That mismatch, plus
+// recalculating `isMobile` from window.innerWidth only once per render
+// (never on resize/rotate), is what made it feel broken on mobile.
+const SalesChart = ({ data }) => {
+  const chartRef = useRef(null);
+
+  // Destroy the Chart.js instance on unmount — without this, switching
+  // timeRange or navigating away and back can throw "Canvas is already
+  // in use", which is a very plausible source of your earlier crashes.
+  useEffect(() => {
+    return () => {
+      chartRef.current?.destroy?.();
+    };
+  }, []);
+
+  const chartData = useMemo(
+    () => ({
+      labels: (data || []).map((point) => point.period),
+      datasets: [
+        {
+          label: 'Revenue',
+          data: (data || []).map((point) => point.revenue),
+          borderColor: '#EB8A14',
+          backgroundColor: 'rgba(235, 138, 20, 0.15)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: '#EB8A14',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+        },
+      ],
+    }),
+    [data]
+  );
+
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false, // wrapper div controls height, not the canvas
+      resizeDelay: 100, // debounces resize handling, avoids ResizeObserver crash loops
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: (ctx) => `Rs. ${Number(ctx.parsed.y || 0).toLocaleString()}`,
+          },
+        },
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value) => `Rs. ${(value / 1000).toFixed(0)}k`,
+          },
+        },
+      },
+    }),
+    []
+  );
+
   if (!data || data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-gray-400">
+      <div className="h-56 sm:h-64 flex items-center justify-center text-gray-400">
         <p>No sales data available</p>
       </div>
     );
   }
 
-  const maxValue = Math.max(...data.map(d => d.revenue), 1);
-  const chartHeight = 200;
-  const mobileChartHeight = 180;
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-  const height = isMobile ? mobileChartHeight : chartHeight;
-  const chartPadding = 30;
-
+  // Height lives on this wrapper only — that's what fixes the mobile sizing.
   return (
-    <div className="relative">
-      {/* Y-axis labels */}
-      <div className="absolute left-0 top-0 h-full flex flex-col justify-between py-2 sm:py-4 text-[10px] sm:text-xs text-gray-500 font-medium">
-        <span className="truncate">Rs. {(maxValue / 1000).toFixed(0)}k</span>
-        <span className="truncate">Rs. {(maxValue / 2000).toFixed(0)}k</span>
-        <span>Rs. 0</span>
-      </div>
-
-      {/* Chart Container */}
-      <div className="ml-10 sm:ml-16 overflow-x-auto scrollbar-hide">
-        <svg
-          width="100%"
-          height={height}
-          className="min-w-full"
-          viewBox={`0 0 ${data.length * 60} ${height}`}
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {/* Grid Lines */}
-          <line
-            x1="0"
-            y1={chartPadding}
-            x2={data.length * 60}
-            y2={chartPadding}
-            stroke="#e5e7eb"
-            strokeWidth="1"
-            strokeDasharray="4 4"
-          />
-          <line
-            x1="0"
-            y1={height / 2}
-            x2={data.length * 60}
-            y2={height / 2}
-            stroke="#e5e7eb"
-            strokeWidth="1"
-            strokeDasharray="4 4"
-          />
-          <line
-            x1="0"
-            y1={height - chartPadding}
-            x2={data.length * 60}
-            y2={height - chartPadding}
-            stroke="#e5e7eb"
-            strokeWidth="1"
-            strokeDasharray="4 4"
-          />
-
-          {/* Line Chart Path */}
-          <path
-            d={data
-              .map((point, index) => {
-                const x = index * 60 + 30;
-                const y =
-                  height -
-                  chartPadding -
-                  (point.revenue / maxValue) * (height - chartPadding * 2);
-                return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-              })
-              .join(' ')}
-            fill="none"
-            stroke="url(#gradient)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* Gradient Definitions */}
-          <defs>
-            <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#EB8A14" stopOpacity="1" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="1" />
-            </linearGradient>
-            <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#EB8A14" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#EB8A14" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {/* Area Fill */}
-          <path
-            d={
-              data
-                .map((point, index) => {
-                  const x = index * 60 + 30;
-                  const y =
-                    height -
-                    chartPadding -
-                    (point.revenue / maxValue) * (height - chartPadding * 2);
-                  return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-                })
-                .join(' ') +
-              ` L ${data.length * 60 - 30} ${height - chartPadding} L 30 ${
-                height - chartPadding
-              } Z`
-            }
-            fill="url(#areaGradient)"
-          />
-
-          {/* Data Points */}
-          {data.map((point, index) => {
-            const x = index * 60 + 30;
-            const y =
-              height -
-              chartPadding -
-              (point.revenue / maxValue) * (height - chartPadding * 2);
-
-            return (
-              <g key={index}>
-                <circle cx={x} cy={y} r="4" fill="#EB8A14" stroke="white" strokeWidth="2" />
-                <circle
-                  cx={x}
-                  cy={y}
-                  r="8"
-                  fill="#EB8A14"
-                  fillOpacity="0"
-                  className="active:fill-opacity-20 sm:hover:fill-opacity-20 transition-all cursor-pointer"
-                />
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      {/* X-axis labels */}
-      <div className="ml-10 sm:ml-16 flex gap-1 mt-2 text-[10px] sm:text-xs overflow-x-auto scrollbar-hide">
-        {data.map((point, index) => (
-          <div key={index} className="text-center flex-shrink-0" style={{ width: '60px' }}>
-            <div className="font-bold text-gray-800 truncate px-1">{point.period}</div>
-            <div className="text-[#EB8A14] font-semibold truncate px-1">
-              {point.revenue > 1000 
-                ? `${(point.revenue / 1000).toFixed(1)}k`
-                : point.revenue.toLocaleString()
-              }
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="relative w-full h-56 sm:h-64">
+      <Line ref={chartRef} data={chartData} options={options} />
     </div>
   );
 };
