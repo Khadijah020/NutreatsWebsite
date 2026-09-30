@@ -1,3 +1,4 @@
 node_modules/server/google-analytics-credentials.json
 PROJECT_OVERVIEW.md
 server/inspect-db-schema.js
+node_modules/
