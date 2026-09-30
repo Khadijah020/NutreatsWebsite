@@ -2,10 +2,14 @@
 
 E-commerce storefront and seller dashboard for natural food products sold in Pakistan. Built with the MERN stack as a client project.
 
-![Seller dashboard](screenshots/Admin-dashboard.png)
-![Categories](screenshots/categories.png)
 ![customer-storefront](screenshots/customer-storefront.png)
+
+![Categories](screenshots/categories.png)
+
 ![Products](screenshots/filtered-products.png)
+
+![Seller dashboard](screenshots/Admin-dashboard.png)
+
 ![Sales Overview](screenshots/sales-overview.png)
 
 >
